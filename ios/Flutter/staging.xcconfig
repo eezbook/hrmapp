@@ -1,0 +1,4 @@
+#include "Release.xcconfig"
+DART_DEFINES=FLAVOR=staging
+APP_DISPLAY_NAME=HRM Staging
+PRODUCT_BUNDLE_IDENTIFIER=com.hrmapp.app.staging
