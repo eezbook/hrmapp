@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -9,6 +8,7 @@ import '../../../../core/utils/date_utils.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/datasources/leave_remote_datasource.dart';
+import '../../data/models/leave_balance_model.dart';
 import '../../data/models/leave_type_model.dart';
 import '../bloc/leave_bloc.dart';
 import '../bloc/leave_event.dart';
@@ -26,16 +26,42 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   final _reasonCtrl = TextEditingController();
 
   List<LeaveTypeModel> _leaveTypes = [];
+  List<LeaveBalanceModel> _balances = [];
   LeaveTypeModel? _selectedType;
   DateTime? _startDate;
   DateTime? _endDate;
   DateTime _focusedDay = DateTime.now();
-  bool _isHalfDay = false;
-  String _halfSession = 'morning';
-  XFile? _document;
+
+  // 0 = Full Day, 1 = 1st Half, 2 = 2nd Half
+  int _dayType = 0;
+
   List<String> _holidays = [];
   bool _loadingTypes = true;
   String? _error;
+
+  bool get _isSingleDay =>
+      _startDate != null &&
+      _endDate != null &&
+      isSameDay(_startDate!, _endDate!);
+
+  bool get _isHalfDay => _dayType != 0;
+
+  double get _calculatedDays {
+    if (_startDate == null || _endDate == null) return 0;
+    if (_isHalfDay) return 0.5;
+    return HrmDateUtils.workingDaysBetween(_startDate!, _endDate!).toDouble();
+  }
+
+  double? get _selectedBalance {
+    if (_selectedType == null) return null;
+    try {
+      return _balances
+          .firstWhere((b) => b.id == _selectedType!.id)
+          .remaining;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -48,30 +74,20 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       final ds = getIt<LeaveRemoteDataSource>();
       final typesRes = await ds.getLeaveTypes();
       final holidaysRes = await ds.getPublicHolidays();
+      final balanceRes = await ds.getBalance();
       setState(() {
         _leaveTypes = typesRes.data ?? [];
         _holidays = holidaysRes.data ?? [];
+        _balances = balanceRes.data ?? [];
         if (_leaveTypes.isNotEmpty) _selectedType = _leaveTypes.first;
         _loadingTypes = false;
       });
     } catch (e) {
       setState(() {
         _loadingTypes = false;
-        _error = 'Failed to load leave types';
+        _error = 'Failed to load leave data';
       });
     }
-  }
-
-  int get _calculatedDays {
-    if (_startDate == null || _endDate == null) return 0;
-    if (_isHalfDay) return 0; // 0.5 handled separately
-    return HrmDateUtils.workingDaysBetween(_startDate!, _endDate!);
-  }
-
-  Future<void> _pickDocument() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) setState(() => _document = file);
   }
 
   void _submit() {
@@ -80,20 +96,27 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       setState(() => _error = 'Please select leave dates');
       return;
     }
-    if (_selectedType!.requiresDocument && _document == null) {
-      setState(
-          () => _error = 'Document is required for this leave type');
-      return;
-    }
 
     context.read<LeaveBloc>().add(ApplyLeave({
           'leave_type_id': _selectedType!.id,
           'start_date': HrmDateUtils.formatApi(_startDate!),
           'end_date': HrmDateUtils.formatApi(_endDate!),
-          'reason': _reasonCtrl.text.trim(),
           'is_half_day': _isHalfDay,
-          if (_isHalfDay) 'half_day_session': _halfSession,
+          if (_isHalfDay)
+            'half_day_session': _dayType == 2 ? 'afternoon' : 'morning',
+          'reason': _reasonCtrl.text.trim(),
         }));
+  }
+
+  String _dayTypeLabel(int type) {
+    switch (type) {
+      case 1:
+        return '1st Half';
+      case 2:
+        return '2nd Half';
+      default:
+        return 'Full Day';
+    }
   }
 
   @override
@@ -119,8 +142,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
             );
             ctx.read<LeaveBloc>().add(LoadBalance());
           } else if (state is LeaveError) {
-            setState(
-                () => _error = state.failure.message);
+            setState(() => _error = state.failure.message);
           }
         },
         child: _loadingTypes
@@ -132,27 +154,65 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<LeaveTypeModel>(
-                        value: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Leave Type',
-                        ),
-                        items: _leaveTypes
-                            .map((t) => DropdownMenuItem(
-                                  value: t,
-                                  child: Text(t.name),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _selectedType = v),
-                        validator: (v) =>
-                            v == null ? 'Select a leave type' : null,
+                      // ── Leave Type + Balance ──────────────────────
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<LeaveTypeModel>(
+                              value: _selectedType,
+                              decoration: const InputDecoration(
+                                labelText: 'Leave Type',
+                              ),
+                              items: _leaveTypes
+                                  .map((t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text(t.name),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) => setState(() {
+                                _selectedType = v;
+                                _dayType = 0;
+                              }),
+                              validator: (v) =>
+                                  v == null ? 'Select a leave type' : null,
+                            ),
+                          ),
+                          if (_selectedBalance != null) ...[
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: scheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    _selectedBalance!.toStringAsFixed(1),
+                                    style: AppTextStyles.titleSmall.copyWith(
+                                      color: scheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Balance',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: scheme.onPrimaryContainer,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
+
                       const SizedBox(height: AppSpacing.md),
-                      Text(
-                        'Select Dates',
-                        style: AppTextStyles.titleSmall,
-                      ),
+
+                      // ── Date Picker ───────────────────────────────
+                      Text('Select Dates', style: AppTextStyles.titleSmall),
                       const SizedBox(height: AppSpacing.sm),
                       TableCalendar(
                         firstDay: DateTime.now()
@@ -183,6 +243,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                                   _startDate = start;
                                   _endDate = end;
                                   _focusedDay = focused;
+                                  _dayType = 0;
                                 });
                               },
                         onDaySelected: _isHalfDay
@@ -211,6 +272,8 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                           ),
                         ),
                       ),
+
+                      // ── Date Summary ──────────────────────────────
                       if (_startDate != null) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Container(
@@ -219,112 +282,91 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                             color: scheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            _isHalfDay
-                                ? 'Half day on ${HrmDateUtils.formatDisplay(_startDate!)}'
-                                : '${_calculatedDays} working day(s) · ${HrmDateUtils.formatDisplay(_startDate!)} – ${HrmDateUtils.formatDisplay(_endDate ?? _startDate!)}',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: scheme.onPrimaryContainer,
-                            ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _isHalfDay
+                                      ? '${_dayTypeLabel(_dayType)} on ${HrmDateUtils.formatDisplay(_startDate!)}'
+                                      : '${HrmDateUtils.formatDisplay(_startDate!)} – ${HrmDateUtils.formatDisplay(_endDate ?? _startDate!)}',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: scheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${_calculatedDays.toStringAsFixed(1)} day(s)',
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  color: scheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
+
                       const SizedBox(height: AppSpacing.md),
-                      if (_selectedType?.allowHalfDay == true) ...[
-                        SwitchListTile(
-                          title: const Text('Half Day'),
-                          value: _isHalfDay,
-                          onChanged: (v) =>
-                              setState(() => _isHalfDay = v),
-                          contentPadding: EdgeInsets.zero,
+
+                      // ── Day Type (only for single-day selection) ──
+                      if (_isSingleDay) ...[
+                        Text('Day Type', style: AppTextStyles.titleSmall),
+                        const SizedBox(height: AppSpacing.sm),
+                        SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(value: 0, label: Text('Full Day')),
+                            ButtonSegment(value: 1, label: Text('1st Half')),
+                            ButtonSegment(value: 2, label: Text('2nd Half')),
+                          ],
+                          selected: {_dayType},
+                          onSelectionChanged: (s) =>
+                              setState(() => _dayType = s.first),
                         ),
-                        if (_isHalfDay)
-                          SegmentedButton<String>(
-                            segments: const [
-                              ButtonSegment(
-                                  value: 'morning', label: Text('Morning')),
-                              ButtonSegment(
-                                  value: 'afternoon',
-                                  label: Text('Afternoon')),
-                            ],
-                            selected: {_halfSession},
-                            onSelectionChanged: (s) =>
-                                setState(() => _halfSession = s.first),
-                          ),
                         const SizedBox(height: AppSpacing.md),
                       ],
+
+                      // ── Reason ────────────────────────────────────
                       TextFormField(
                         controller: _reasonCtrl,
                         maxLines: 3,
+                        maxLength: 2000,
                         decoration: const InputDecoration(
                           labelText: 'Reason',
-                          hintText: 'Minimum 10 characters',
+                          hintText: 'Enter reason for leave',
+                          alignLabelWithHint: true,
                         ),
                         validator: Validators.reason,
                       ),
+
                       const SizedBox(height: AppSpacing.md),
-                      if (_selectedType?.requiresDocument == true ||
-                          _document != null) ...[
-                        Text(
-                          'Supporting Document${_selectedType?.requiresDocument == true ? ' (Required)' : ''}',
-                          style: AppTextStyles.titleSmall,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        GestureDetector(
-                          onTap: _pickDocument,
-                          child: Container(
-                            height: 80,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: scheme.outline.withOpacity(0.5),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: _document != null
-                                ? Center(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.attach_file),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          _document!.name,
-                                          style: AppTextStyles.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.upload_rounded,
-                                            color: scheme.onSurfaceVariant),
-                                        Text(
-                                          'Tap to attach document',
-                                          style:
-                                              AppTextStyles.bodySmall.copyWith(
-                                            color: scheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+
+                      // ── Error ─────────────────────────────────────
+                      if (_error != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: scheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline,
+                                  color: scheme.onErrorContainer, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: scheme.onErrorContainer,
                                   ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                      if (_error != null) ...[
-                        Text(
-                          _error!,
-                          style: AppTextStyles.bodySmall
-                              .copyWith(color: scheme.error),
-                        ),
                         const SizedBox(height: AppSpacing.sm),
                       ],
+
+                      // ── Submit ────────────────────────────────────
                       BlocBuilder<LeaveBloc, LeaveState>(
                         builder: (_, state) => AppButton(
                           label: 'Submit Leave Request',

@@ -138,6 +138,12 @@ class _PendingApprovalCard extends StatelessWidget {
 
   const _PendingApprovalCard({required this.req, required this.context});
 
+  static String _dayTypeLabel(bool isHalfDay, String? session) {
+    if (!isHalfDay) return 'Full Day';
+    if (session == 'afternoon') return '2nd Half';
+    return '1st Half';
+  }
+
   @override
   Widget build(BuildContext ctx) {
     final scheme = Theme.of(ctx).colorScheme;
@@ -172,11 +178,23 @@ class _PendingApprovalCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  '${req.days.toStringAsFixed(1)} d',
-                  style: AppTextStyles.titleSmall.copyWith(
-                    color: scheme.primary,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${req.days.toStringAsFixed(1)} d',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: scheme.primary,
+                      ),
+                    ),
+                    Text(
+                      _dayTypeLabel(req.isHalfDay, req.halfDaySession),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -187,14 +205,15 @@ class _PendingApprovalCard extends StatelessWidget {
               style: AppTextStyles.bodySmall,
             ),
             const SizedBox(height: 6),
-            Text(
-              req.reason,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: scheme.onSurfaceVariant,
+            if (req.reason.isNotEmpty)
+              Text(
+                req.reason,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
             const SizedBox(height: 12),
             Row(
               children: [

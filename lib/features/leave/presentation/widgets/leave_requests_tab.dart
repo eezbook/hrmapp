@@ -26,10 +26,17 @@ class _LeaveRequestsTabState extends State<LeaveRequestsTab> {
 
   final _filters = [
     (null, 'All'),
+    ('draft', 'Draft'),
     ('pending', 'Pending'),
     ('approved', 'Approved'),
     ('rejected', 'Rejected'),
   ];
+
+  static String _dayTypeLabel(bool isHalfDay, String? session) {
+    if (!isHalfDay) return 'Full Day';
+    if (session == 'afternoon') return '2nd Half';
+    return '1st Half';
+  }
 
   @override
   void initState() {
@@ -167,14 +174,52 @@ class _LeaveRequestsTabState extends State<LeaveRequestsTab> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    '${req.days.toStringAsFixed(1)} day(s)',
-                                    style: AppTextStyles.labelSmall.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${req.days.toStringAsFixed(1)} day(s)',
+                                        style: AppTextStyles.labelSmall.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _dayTypeLabel(req.isHalfDay, req.halfDaySession),
+                                        style: AppTextStyles.labelSmall.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                  if (req.reason.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      req.reason,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (req.createdAt != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Requested: ${HrmDateUtils.formatDisplay(DateTime.parse(req.createdAt!))}',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

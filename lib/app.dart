@@ -14,7 +14,11 @@ import 'features/auth/presentation/bloc/auth_event.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    return;
+  }
   final box = await Hive.openBox(HiveKeys.notifications);
   final current = box.get(HiveKeys.unreadCount, defaultValue: 0) as int;
   await box.put(HiveKeys.unreadCount, current + 1);
@@ -22,12 +26,16 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 
 Future<void> runHrmApp() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
   await Hive.initFlutter();
   HiveStorage.registerAdapters();
   await HiveStorage.openBoxes();
   await configureDependencies();
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+  try {
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+  } catch (_) {}
   await getIt<NotificationService>().initialize();
   runApp(const HrmApp());
 }

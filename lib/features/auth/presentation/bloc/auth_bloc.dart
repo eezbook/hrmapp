@@ -7,6 +7,7 @@ import '../../../../core/services/biometric_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/storage/hive_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../domain/entities/employee.dart';
 import '../../domain/usecases/get_me_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -49,7 +50,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     HrmPermissions.loadFromHive();
     final token = await _secureStorage.read(SecureKeys.authToken);
-    if (token == null) {
+    if (token == null || token == 'demo_token') {
+      await _secureStorage.deleteAll();
+      HrmPermissions.clear();
       emit(AuthUnauthenticated());
       return;
     }

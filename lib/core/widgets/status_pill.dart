@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
 enum RequestStatus {
+  draft,
   pending,
   approved,
   rejected,
@@ -14,6 +15,8 @@ enum RequestStatus {
 extension RequestStatusX on RequestStatus {
   static RequestStatus fromString(String value) {
     switch (value.toLowerCase()) {
+      case 'draft':
+        return RequestStatus.draft;
       case 'approved':
         return RequestStatus.approved;
       case 'rejected':
@@ -32,6 +35,8 @@ extension RequestStatusX on RequestStatus {
 
   Color get bgColor {
     switch (this) {
+      case RequestStatus.draft:
+        return AppColors.cancelledBg;
       case RequestStatus.pending:
         return AppColors.pendingBg;
       case RequestStatus.approved:
@@ -49,6 +54,8 @@ extension RequestStatusX on RequestStatus {
 
   Color get textColor {
     switch (this) {
+      case RequestStatus.draft:
+        return AppColors.grey600;
       case RequestStatus.pending:
         return AppColors.pending;
       case RequestStatus.approved:
@@ -66,6 +73,8 @@ extension RequestStatusX on RequestStatus {
 
   String get label {
     switch (this) {
+      case RequestStatus.draft:
+        return 'Draft';
       case RequestStatus.pending:
         return 'Pending';
       case RequestStatus.approved:

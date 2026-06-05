@@ -17,9 +17,7 @@ _ApiResponse<T> _$ApiResponseFromJson<T>(
     (k, e) =>
         MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
   ),
-  meta: json['meta'] == null
-      ? null
-      : PaginationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  meta: _metaFromJson(json['meta']),
 );
 
 Map<String, dynamic> _$ApiResponseToJson<T>(

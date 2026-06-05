@@ -8,7 +8,7 @@ part 'auth_response_model.g.dart';
 abstract class AuthResponseModel with _$AuthResponseModel {
   const factory AuthResponseModel({
     required EmployeeModel employee,
-    required List<String> hrmPermissions,
+    @Default([]) List<String> hrmPermissions,
     required String token,
     String? refreshToken,
   }) = _AuthResponseModel;
