@@ -216,16 +216,16 @@ return $default(_that.id,_that.leaveTypeName,_that.leaveTypeCode,_that.allocated
 @JsonSerializable()
 
 class _LeaveBalanceModel implements LeaveBalanceModel {
-  const _LeaveBalanceModel({required this.id, required this.leaveTypeName, required this.leaveTypeCode, required this.allocated, required this.used, required this.pending, required this.remaining, this.color});
+  const _LeaveBalanceModel({required this.id, required this.leaveTypeName, required this.leaveTypeCode, this.allocated = 0.0, this.used = 0.0, this.pending = 0.0, this.remaining = 0.0, this.color});
   factory _LeaveBalanceModel.fromJson(Map<String, dynamic> json) => _$LeaveBalanceModelFromJson(json);
 
 @override final  int id;
 @override final  String leaveTypeName;
 @override final  String leaveTypeCode;
-@override final  double allocated;
-@override final  double used;
-@override final  double pending;
-@override final  double remaining;
+@override@JsonKey() final  double allocated;
+@override@JsonKey() final  double used;
+@override@JsonKey() final  double pending;
+@override@JsonKey() final  double remaining;
 @override final  String? color;
 
 /// Create a copy of LeaveBalanceModel

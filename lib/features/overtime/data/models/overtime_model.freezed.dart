@@ -221,15 +221,15 @@ return $default(_that.id,_that.date,_that.startTime,_that.endTime,_that.hours,_t
 @JsonSerializable()
 
 class _OvertimeRequestModel implements OvertimeRequestModel {
-  const _OvertimeRequestModel({required this.id, required this.date, required this.startTime, required this.endTime, required this.hours, required this.amount, required this.status, required this.reason, this.approverComment, this.createdAt, this.employeeName, this.employeePhoto, this.approvedBy});
+  const _OvertimeRequestModel({required this.id, required this.date, required this.startTime, required this.endTime, this.hours = 0.0, this.amount = 0.0, required this.status, required this.reason, this.approverComment, this.createdAt, this.employeeName, this.employeePhoto, this.approvedBy});
   factory _OvertimeRequestModel.fromJson(Map<String, dynamic> json) => _$OvertimeRequestModelFromJson(json);
 
 @override final  int id;
 @override final  String date;
 @override final  String startTime;
 @override final  String endTime;
-@override final  double hours;
-@override final  double amount;
+@override@JsonKey() final  double hours;
+@override@JsonKey() final  double amount;
 @override final  String status;
 @override final  String reason;
 @override final  String? approverComment;
@@ -510,12 +510,12 @@ return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);c
 @JsonSerializable()
 
 class _OvertimeSummaryModel implements OvertimeSummaryModel {
-  const _OvertimeSummaryModel({required this.totalApprovedHours, required this.totalAmount, required this.pendingCount});
+  const _OvertimeSummaryModel({this.totalApprovedHours = 0.0, this.totalAmount = 0.0, this.pendingCount = 0});
   factory _OvertimeSummaryModel.fromJson(Map<String, dynamic> json) => _$OvertimeSummaryModelFromJson(json);
 
-@override final  double totalApprovedHours;
-@override final  double totalAmount;
-@override final  int pendingCount;
+@override@JsonKey() final  double totalApprovedHours;
+@override@JsonKey() final  double totalAmount;
+@override@JsonKey() final  int pendingCount;
 
 /// Create a copy of OvertimeSummaryModel
 /// with the given fields replaced by the non-null parameter values.

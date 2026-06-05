@@ -13,7 +13,7 @@ _LeaveTypeModel _$LeaveTypeModelFromJson(Map<String, dynamic> json) =>
       code: json['code'] as String,
       requiresDocument: json['requiresDocument'] as bool,
       allowHalfDay: json['allowHalfDay'] as bool,
-      maxDays: (json['maxDays'] as num).toInt(),
+      maxDays: (json['maxDays'] as num?)?.toInt() ?? 0,
       color: json['color'] as String?,
     );
 

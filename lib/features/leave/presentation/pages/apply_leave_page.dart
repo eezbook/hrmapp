@@ -35,6 +35,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   // 0 = Full Day, 1 = 1st Half, 2 = 2nd Half
   int _dayType = 0;
 
+  // 0 = Save as Draft, 1 = Send for Approval
+  int _approvalStatus = 1;
+
+  // TODO: future — backup employee support (requires employee search API endpoint
+  // and backend update to HrmMobileLeaveController::apply() to accept backup_employee_id)
+  // final _backupEmployeeCtrl = TextEditingController();
+  // int? _backupEmployeeId;
+
   List<String> _holidays = [];
   bool _loadingTypes = true;
   String? _error;
@@ -105,6 +113,9 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
           if (_isHalfDay)
             'half_day_session': _dayType == 2 ? 'afternoon' : 'morning',
           'reason': _reasonCtrl.text.trim(),
+          'request_date': HrmDateUtils.formatApi(DateTime.now()),
+          'approval_status': _approvalStatus,
+          // TODO: future — 'backup_employee_id': _backupEmployeeId,
         }));
   }
 
@@ -122,6 +133,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   @override
   void dispose() {
     _reasonCtrl.dispose();
+    // TODO: future — _backupEmployeeCtrl.dispose();
     super.dispose();
   }
 
@@ -154,6 +166,41 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Approval Status ───────────────────────────
+                      DropdownButtonFormField<int>(
+                        value: _approvalStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Approval Status',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text('Save as Draft'),
+                          ),
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text('Send for Approval'),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _approvalStatus = v ?? 1),
+                      ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // TODO: future — Backup Employee field
+                      // Requires: employee search API endpoint + backend update
+                      // to HrmMobileLeaveController::apply() to accept backup_employee_id.
+                      //
+                      // TextFormField(
+                      //   controller: _backupEmployeeCtrl,
+                      //   decoration: const InputDecoration(
+                      //     labelText: 'Backup Employee (optional)',
+                      //     hintText: 'Search employee...',
+                      //   ),
+                      // ),
+                      // const SizedBox(height: AppSpacing.md),
+
                       // ── Leave Type + Balance ──────────────────────
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -273,7 +320,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                         ),
                       ),
 
-                      // ── Date Summary ──────────────────────────────
+                      // ── Date Summary + Total Days ─────────────────
                       if (_startDate != null) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Container(
@@ -285,20 +332,40 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  _isHalfDay
-                                      ? '${_dayTypeLabel(_dayType)} on ${HrmDateUtils.formatDisplay(_startDate!)}'
-                                      : '${HrmDateUtils.formatDisplay(_startDate!)} – ${HrmDateUtils.formatDisplay(_endDate ?? _startDate!)}',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: scheme.onPrimaryContainer,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _isHalfDay
+                                          ? '${_dayTypeLabel(_dayType)} on ${HrmDateUtils.formatDisplay(_startDate!)}'
+                                          : '${HrmDateUtils.formatDisplay(_startDate!)} – ${HrmDateUtils.formatDisplay(_endDate ?? _startDate!)}',
+                                      style: AppTextStyles.bodySmall
+                                          .copyWith(
+                                        color: scheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                '${_calculatedDays.toStringAsFixed(1)} day(s)',
-                                style: AppTextStyles.titleSmall.copyWith(
-                                  color: scheme.onPrimaryContainer,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${_calculatedDays.toStringAsFixed(1)} day(s)',
+                                    style: AppTextStyles.titleSmall
+                                        .copyWith(
+                                      color: scheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Total Days',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: scheme.onPrimaryContainer,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -324,14 +391,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                         const SizedBox(height: AppSpacing.md),
                       ],
 
-                      // ── Reason ────────────────────────────────────
+                      // ── Reason / Narration ────────────────────────
                       TextFormField(
                         controller: _reasonCtrl,
                         maxLines: 3,
                         maxLength: 2000,
                         decoration: const InputDecoration(
-                          labelText: 'Reason',
-                          hintText: 'Enter reason for leave',
+                          labelText: 'Reason / Narration',
+                          hintText: 'Enter reason for leave...',
                           alignLabelWithHint: true,
                         ),
                         validator: Validators.reason,

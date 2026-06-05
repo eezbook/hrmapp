@@ -11,7 +11,7 @@ abstract class LeaveTypeModel with _$LeaveTypeModel {
     required String code,
     required bool requiresDocument,
     required bool allowHalfDay,
-    required int maxDays,
+    @Default(0) int maxDays,
     String? color,
   }) = _LeaveTypeModel;
 

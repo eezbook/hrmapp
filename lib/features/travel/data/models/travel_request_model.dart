@@ -13,7 +13,7 @@ abstract class TravelRequestModel with _$TravelRequestModel {
     required String departureDate,
     required String returnDate,
     required String transportMode,
-    required double estimatedBudget,
+    @Default(0.0) double estimatedBudget,
     required String status,
     String? createdAt,
     String? employeeName,

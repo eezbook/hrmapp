@@ -9,7 +9,7 @@ abstract class ApiResponse<T> with _$ApiResponse<T> {
     required bool success,
     T? data,
     String? message,
-    Map<String, List<String>>? errors,
+    @JsonKey(fromJson: _errorsFromJson) Map<String, dynamic>? errors,
     @JsonKey(fromJson: _metaFromJson) PaginationMeta? meta,
   }) = _ApiResponse;
 
@@ -23,16 +23,24 @@ abstract class ApiResponse<T> with _$ApiResponse<T> {
 @freezed
 abstract class PaginationMeta with _$PaginationMeta {
   const factory PaginationMeta({
-    required int currentPage,
-    required int lastPage,
-    required int total,
-    required int perPage,
+    @Default(1) int currentPage,
+    @Default(1) int lastPage,
+    @Default(0) int total,
+    @Default(0) int perPage,
     String? nextPageUrl,
     String? prevPageUrl,
   }) = _PaginationMeta;
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) =>
       _$PaginationMetaFromJson(json);
+}
+
+// Handles both { "code": "HRM_AUTH_001" } (string values) and
+// { "field": ["error msg"] } (list values) from the backend.
+Map<String, dynamic>? _errorsFromJson(dynamic json) {
+  if (json == null) return null;
+  if (json is Map) return Map<String, dynamic>.from(json);
+  return null;
 }
 
 PaginationMeta? _metaFromJson(dynamic json) {

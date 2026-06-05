@@ -13,10 +13,7 @@ _ApiResponse<T> _$ApiResponseFromJson<T>(
   success: json['success'] as bool,
   data: _$nullableGenericFromJson(json['data'], fromJsonT),
   message: json['message'] as String?,
-  errors: (json['errors'] as Map<String, dynamic>?)?.map(
-    (k, e) =>
-        MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
-  ),
+  errors: _errorsFromJson(json['errors']),
   meta: _metaFromJson(json['meta']),
 );
 
@@ -43,10 +40,10 @@ Object? _$nullableGenericToJson<T>(
 
 _PaginationMeta _$PaginationMetaFromJson(Map<String, dynamic> json) =>
     _PaginationMeta(
-      currentPage: (json['currentPage'] as num).toInt(),
-      lastPage: (json['lastPage'] as num).toInt(),
-      total: (json['total'] as num).toInt(),
-      perPage: (json['perPage'] as num).toInt(),
+      currentPage: (json['currentPage'] as num?)?.toInt() ?? 1,
+      lastPage: (json['lastPage'] as num?)?.toInt() ?? 1,
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      perPage: (json['perPage'] as num?)?.toInt() ?? 0,
       nextPageUrl: json['nextPageUrl'] as String?,
       prevPageUrl: json['prevPageUrl'] as String?,
     );

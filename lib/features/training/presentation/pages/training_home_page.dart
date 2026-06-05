@@ -43,6 +43,11 @@ class _TrainingHomePageState extends State<TrainingHomePage>
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Training',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.pushNamed(RouteNames.trainingRequest),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Request'),
+      ),
       body: Column(
         children: [
           TabBar(

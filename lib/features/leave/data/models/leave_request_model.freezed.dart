@@ -499,14 +499,14 @@ return $default(_that.id,_that.leaveTypeName,_that.startDate,_that.endDate,_that
 @JsonSerializable()
 
 class _LeaveRequestModel implements LeaveRequestModel {
-  const _LeaveRequestModel({required this.id, required this.leaveTypeName, required this.startDate, required this.endDate, required this.days, required this.status, required this.reason, this.documentUrl, this.cancelledAt, this.createdAt, this.isHalfDay, this.halfDaySession, final  List<ApprovalStepModel>? approvalTrail, this.employeeName, this.employeePhoto, this.leaveTypeCode}): _approvalTrail = approvalTrail;
+  const _LeaveRequestModel({required this.id, required this.leaveTypeName, required this.startDate, required this.endDate, this.days = 0.0, required this.status, required this.reason, this.documentUrl, this.cancelledAt, this.createdAt, this.isHalfDay, this.halfDaySession, final  List<ApprovalStepModel>? approvalTrail, this.employeeName, this.employeePhoto, this.leaveTypeCode}): _approvalTrail = approvalTrail;
   factory _LeaveRequestModel.fromJson(Map<String, dynamic> json) => _$LeaveRequestModelFromJson(json);
 
 @override final  int id;
 @override final  String leaveTypeName;
 @override final  String startDate;
 @override final  String endDate;
-@override final  double days;
+@override@JsonKey() final  double days;
 @override final  String status;
 @override final  String reason;
 @override final  String? documentUrl;

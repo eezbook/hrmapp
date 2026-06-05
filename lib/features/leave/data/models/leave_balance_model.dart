@@ -9,10 +9,10 @@ abstract class LeaveBalanceModel with _$LeaveBalanceModel {
     required int id,
     required String leaveTypeName,
     required String leaveTypeCode,
-    required double allocated,
-    required double used,
-    required double pending,
-    required double remaining,
+    @Default(0.0) double allocated,
+    @Default(0.0) double used,
+    @Default(0.0) double pending,
+    @Default(0.0) double remaining,
     String? color,
   }) = _LeaveBalanceModel;
 

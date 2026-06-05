@@ -11,10 +11,10 @@ _LeaveBalanceModel _$LeaveBalanceModelFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       leaveTypeName: json['leaveTypeName'] as String,
       leaveTypeCode: json['leaveTypeCode'] as String,
-      allocated: (json['allocated'] as num).toDouble(),
-      used: (json['used'] as num).toDouble(),
-      pending: (json['pending'] as num).toDouble(),
-      remaining: (json['remaining'] as num).toDouble(),
+      allocated: (json['allocated'] as num?)?.toDouble() ?? 0.0,
+      used: (json['used'] as num?)?.toDouble() ?? 0.0,
+      pending: (json['pending'] as num?)?.toDouble() ?? 0.0,
+      remaining: (json['remaining'] as num?)?.toDouble() ?? 0.0,
       color: json['color'] as String?,
     );
 

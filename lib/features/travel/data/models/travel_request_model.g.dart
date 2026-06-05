@@ -15,7 +15,7 @@ _TravelRequestModel _$TravelRequestModelFromJson(Map<String, dynamic> json) =>
       departureDate: json['departureDate'] as String,
       returnDate: json['returnDate'] as String,
       transportMode: json['transportMode'] as String,
-      estimatedBudget: (json['estimatedBudget'] as num).toDouble(),
+      estimatedBudget: (json['estimatedBudget'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String,
       createdAt: json['createdAt'] as String?,
       employeeName: json['employeeName'] as String?,

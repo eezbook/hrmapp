@@ -216,13 +216,13 @@ return $default(_that.id,_that.category,_that.description,_that.amount,_that.dat
 @JsonSerializable()
 
 class _ExpenseItemModel implements ExpenseItemModel {
-  const _ExpenseItemModel({required this.id, required this.category, required this.description, required this.amount, required this.date, this.receiptUrl, this.requiresReceipt, this.isPerDiem});
+  const _ExpenseItemModel({required this.id, required this.category, required this.description, this.amount = 0.0, required this.date, this.receiptUrl, this.requiresReceipt, this.isPerDiem});
   factory _ExpenseItemModel.fromJson(Map<String, dynamic> json) => _$ExpenseItemModelFromJson(json);
 
 @override final  int id;
 @override final  String category;
 @override final  String description;
-@override final  double amount;
+@override@JsonKey() final  double amount;
 @override final  String date;
 @override final  String? receiptUrl;
 @override final  bool? requiresReceipt;
@@ -502,12 +502,12 @@ return $default(_that.id,_that.title,_that.total,_that.status,_that.items,_that.
 @JsonSerializable()
 
 class _ExpenseClaimModel implements ExpenseClaimModel {
-  const _ExpenseClaimModel({required this.id, required this.title, required this.total, required this.status, required final  List<ExpenseItemModel> items, this.travelRequestId, this.travelRequestDestination, this.createdAt, this.submittedAt, this.budgetAmount}): _items = items;
+  const _ExpenseClaimModel({required this.id, required this.title, this.total = 0.0, required this.status, required final  List<ExpenseItemModel> items, this.travelRequestId, this.travelRequestDestination, this.createdAt, this.submittedAt, this.budgetAmount}): _items = items;
   factory _ExpenseClaimModel.fromJson(Map<String, dynamic> json) => _$ExpenseClaimModelFromJson(json);
 
 @override final  int id;
 @override final  String title;
-@override final  double total;
+@override@JsonKey() final  double total;
 @override final  String status;
  final  List<ExpenseItemModel> _items;
 @override List<ExpenseItemModel> get items {

@@ -27,3 +27,10 @@ class EnrollCourse extends TrainingEvent {
 }
 class LoadMyLearning extends TrainingEvent {}
 class LoadCertificates extends TrainingEvent {}
+
+class SubmitTrainingRequest extends TrainingEvent {
+  final Map<String, dynamic> params;
+  const SubmitTrainingRequest(this.params);
+  @override
+  List<Object?> get props => [params];
+}

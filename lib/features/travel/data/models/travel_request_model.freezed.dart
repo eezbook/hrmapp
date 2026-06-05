@@ -221,7 +221,7 @@ return $default(_that.id,_that.purpose,_that.origin,_that.destination,_that.depa
 @JsonSerializable()
 
 class _TravelRequestModel implements TravelRequestModel {
-  const _TravelRequestModel({required this.id, required this.purpose, required this.origin, required this.destination, required this.departureDate, required this.returnDate, required this.transportMode, required this.estimatedBudget, required this.status, this.createdAt, this.employeeName, this.employeePhoto, this.budgetLimit});
+  const _TravelRequestModel({required this.id, required this.purpose, required this.origin, required this.destination, required this.departureDate, required this.returnDate, required this.transportMode, this.estimatedBudget = 0.0, required this.status, this.createdAt, this.employeeName, this.employeePhoto, this.budgetLimit});
   factory _TravelRequestModel.fromJson(Map<String, dynamic> json) => _$TravelRequestModelFromJson(json);
 
 @override final  int id;
@@ -231,7 +231,7 @@ class _TravelRequestModel implements TravelRequestModel {
 @override final  String departureDate;
 @override final  String returnDate;
 @override final  String transportMode;
-@override final  double estimatedBudget;
+@override@JsonKey() final  double estimatedBudget;
 @override final  String status;
 @override final  String? createdAt;
 @override final  String? employeeName;

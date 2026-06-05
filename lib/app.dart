@@ -24,7 +24,7 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await box.put(HiveKeys.unreadCount, current + 1);
 }
 
-Future<void> runHrmApp() async {
+Future<void> runHrmApp({Widget Function(Widget child)? wrapWith}) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
@@ -37,7 +37,8 @@ Future<void> runHrmApp() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   } catch (_) {}
   await getIt<NotificationService>().initialize();
-  runApp(const HrmApp());
+  final app = const HrmApp();
+  runApp(wrapWith != null ? wrapWith(app) : app);
 }
 
 class HrmApp extends StatelessWidget {

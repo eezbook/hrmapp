@@ -10,7 +10,7 @@ abstract class CourseModel with _$CourseModel {
     required String title,
     required String category,
     required String type,
-    required int durationMinutes,
+    @Default(0) int durationMinutes,
     required bool isMandatory,
     String? thumbnailUrl,
     String? description,

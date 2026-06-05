@@ -9,7 +9,7 @@ abstract class ExpenseItemModel with _$ExpenseItemModel {
     required int id,
     required String category,
     required String description,
-    required double amount,
+    @Default(0.0) double amount,
     required String date,
     String? receiptUrl,
     bool? requiresReceipt,
@@ -25,7 +25,7 @@ abstract class ExpenseClaimModel with _$ExpenseClaimModel {
   const factory ExpenseClaimModel({
     required int id,
     required String title,
-    required double total,
+    @Default(0.0) double total,
     required String status,
     required List<ExpenseItemModel> items,
     int? travelRequestId,

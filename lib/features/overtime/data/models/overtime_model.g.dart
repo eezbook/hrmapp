@@ -13,8 +13,8 @@ _OvertimeRequestModel _$OvertimeRequestModelFromJson(
   date: json['date'] as String,
   startTime: json['startTime'] as String,
   endTime: json['endTime'] as String,
-  hours: (json['hours'] as num).toDouble(),
-  amount: (json['amount'] as num).toDouble(),
+  hours: (json['hours'] as num?)?.toDouble() ?? 0.0,
+  amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
   status: json['status'] as String,
   reason: json['reason'] as String,
   approverComment: json['approverComment'] as String?,
@@ -45,9 +45,9 @@ Map<String, dynamic> _$OvertimeRequestModelToJson(
 _OvertimeSummaryModel _$OvertimeSummaryModelFromJson(
   Map<String, dynamic> json,
 ) => _OvertimeSummaryModel(
-  totalApprovedHours: (json['totalApprovedHours'] as num).toDouble(),
-  totalAmount: (json['totalAmount'] as num).toDouble(),
-  pendingCount: (json['pendingCount'] as num).toInt(),
+  totalApprovedHours: (json['totalApprovedHours'] as num?)?.toDouble() ?? 0.0,
+  totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+  pendingCount: (json['pendingCount'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$OvertimeSummaryModelToJson(

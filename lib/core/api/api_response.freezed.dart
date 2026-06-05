@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ApiResponse<T> {
 
- bool get success; T? get data; String? get message; Map<String, List<String>>? get errors;@JsonKey(fromJson: _metaFromJson) PaginationMeta? get meta;
+ bool get success; T? get data; String? get message;@JsonKey(fromJson: _errorsFromJson) Map<String, dynamic>? get errors;@JsonKey(fromJson: _metaFromJson) PaginationMeta? get meta;
 /// Create a copy of ApiResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ApiResponseCopyWith<T,$Res>  {
   factory $ApiResponseCopyWith(ApiResponse<T> value, $Res Function(ApiResponse<T>) _then) = _$ApiResponseCopyWithImpl;
 @useResult
 $Res call({
- bool success, T? data, String? message, Map<String, List<String>>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
+ bool success, T? data, String? message,@JsonKey(fromJson: _errorsFromJson) Map<String, dynamic>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
 });
 
 
@@ -71,7 +71,7 @@ success: null == success ? _self.success : success // ignore: cast_nullable_to_n
 as bool,data: freezed == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
 as T?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,errors: freezed == errors ? _self.errors : errors // ignore: cast_nullable_to_non_nullable
-as Map<String, List<String>>?,meta: freezed == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,meta: freezed == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
 as PaginationMeta?,
   ));
 }
@@ -169,7 +169,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message, @JsonKey(fromJson: _errorsFromJson)  Map<String, dynamic>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ApiResponse() when $default != null:
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -190,7 +190,7 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message, @JsonKey(fromJson: _errorsFromJson)  Map<String, dynamic>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)  $default,) {final _that = this;
 switch (_that) {
 case _ApiResponse():
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -210,7 +210,7 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool success,  T? data,  String? message, @JsonKey(fromJson: _errorsFromJson)  Map<String, dynamic>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,) {final _that = this;
 switch (_that) {
 case _ApiResponse() when $default != null:
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -225,14 +225,14 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 @JsonSerializable(genericArgumentFactories: true)
 
 class _ApiResponse<T> implements ApiResponse<T> {
-  const _ApiResponse({required this.success, this.data, this.message, final  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson) this.meta}): _errors = errors;
+  const _ApiResponse({required this.success, this.data, this.message, @JsonKey(fromJson: _errorsFromJson) final  Map<String, dynamic>? errors, @JsonKey(fromJson: _metaFromJson) this.meta}): _errors = errors;
   factory _ApiResponse.fromJson(Map<String, dynamic> json,T Function(Object?) fromJsonT) => _$ApiResponseFromJson(json,fromJsonT);
 
 @override final  bool success;
 @override final  T? data;
 @override final  String? message;
- final  Map<String, List<String>>? _errors;
-@override Map<String, List<String>>? get errors {
+ final  Map<String, dynamic>? _errors;
+@override@JsonKey(fromJson: _errorsFromJson) Map<String, dynamic>? get errors {
   final value = _errors;
   if (value == null) return null;
   if (_errors is EqualUnmodifiableMapView) return _errors;
@@ -275,7 +275,7 @@ abstract mixin class _$ApiResponseCopyWith<T,$Res> implements $ApiResponseCopyWi
   factory _$ApiResponseCopyWith(_ApiResponse<T> value, $Res Function(_ApiResponse<T>) _then) = __$ApiResponseCopyWithImpl;
 @override @useResult
 $Res call({
- bool success, T? data, String? message, Map<String, List<String>>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
+ bool success, T? data, String? message,@JsonKey(fromJson: _errorsFromJson) Map<String, dynamic>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
 });
 
 
@@ -298,7 +298,7 @@ success: null == success ? _self.success : success // ignore: cast_nullable_to_n
 as bool,data: freezed == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
 as T?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,errors: freezed == errors ? _self._errors : errors // ignore: cast_nullable_to_non_nullable
-as Map<String, List<String>>?,meta: freezed == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,meta: freezed == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
 as PaginationMeta?,
   ));
 }
@@ -521,13 +521,13 @@ return $default(_that.currentPage,_that.lastPage,_that.total,_that.perPage,_that
 @JsonSerializable()
 
 class _PaginationMeta implements PaginationMeta {
-  const _PaginationMeta({required this.currentPage, required this.lastPage, required this.total, required this.perPage, this.nextPageUrl, this.prevPageUrl});
+  const _PaginationMeta({this.currentPage = 1, this.lastPage = 1, this.total = 0, this.perPage = 0, this.nextPageUrl, this.prevPageUrl});
   factory _PaginationMeta.fromJson(Map<String, dynamic> json) => _$PaginationMetaFromJson(json);
 
-@override final  int currentPage;
-@override final  int lastPage;
-@override final  int total;
-@override final  int perPage;
+@override@JsonKey() final  int currentPage;
+@override@JsonKey() final  int lastPage;
+@override@JsonKey() final  int total;
+@override@JsonKey() final  int perPage;
 @override final  String? nextPageUrl;
 @override final  String? prevPageUrl;
 

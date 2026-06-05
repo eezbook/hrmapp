@@ -24,6 +24,7 @@ abstract class RouteNames {
 
   // Training
   static const training = 'training';
+  static const trainingRequest = 'training-request';
   static const courseDetail = 'course-detail';
   static const coursePlayer = 'course-player';
   static const assessment = 'assessment';
