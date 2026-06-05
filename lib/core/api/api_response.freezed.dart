@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ApiResponse<T> {
 
- bool get success; T? get data; String? get message; Map<String, List<String>>? get errors; PaginationMeta? get meta;
+ bool get success; T? get data; String? get message; Map<String, List<String>>? get errors;@JsonKey(fromJson: _metaFromJson) PaginationMeta? get meta;
 /// Create a copy of ApiResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ApiResponseCopyWith<T,$Res>  {
   factory $ApiResponseCopyWith(ApiResponse<T> value, $Res Function(ApiResponse<T>) _then) = _$ApiResponseCopyWithImpl;
 @useResult
 $Res call({
- bool success, T? data, String? message, Map<String, List<String>>? errors, PaginationMeta? meta
+ bool success, T? data, String? message, Map<String, List<String>>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
 });
 
 
@@ -169,7 +169,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors,  PaginationMeta? meta)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ApiResponse() when $default != null:
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -190,7 +190,7 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors,  PaginationMeta? meta)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)  $default,) {final _that = this;
 switch (_that) {
 case _ApiResponse():
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -210,7 +210,7 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors,  PaginationMeta? meta)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool success,  T? data,  String? message,  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson)  PaginationMeta? meta)?  $default,) {final _that = this;
 switch (_that) {
 case _ApiResponse() when $default != null:
 return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);case _:
@@ -225,7 +225,7 @@ return $default(_that.success,_that.data,_that.message,_that.errors,_that.meta);
 @JsonSerializable(genericArgumentFactories: true)
 
 class _ApiResponse<T> implements ApiResponse<T> {
-  const _ApiResponse({required this.success, this.data, this.message, final  Map<String, List<String>>? errors, this.meta}): _errors = errors;
+  const _ApiResponse({required this.success, this.data, this.message, final  Map<String, List<String>>? errors, @JsonKey(fromJson: _metaFromJson) this.meta}): _errors = errors;
   factory _ApiResponse.fromJson(Map<String, dynamic> json,T Function(Object?) fromJsonT) => _$ApiResponseFromJson(json,fromJsonT);
 
 @override final  bool success;
@@ -240,7 +240,7 @@ class _ApiResponse<T> implements ApiResponse<T> {
   return EqualUnmodifiableMapView(value);
 }
 
-@override final  PaginationMeta? meta;
+@override@JsonKey(fromJson: _metaFromJson) final  PaginationMeta? meta;
 
 /// Create a copy of ApiResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -275,7 +275,7 @@ abstract mixin class _$ApiResponseCopyWith<T,$Res> implements $ApiResponseCopyWi
   factory _$ApiResponseCopyWith(_ApiResponse<T> value, $Res Function(_ApiResponse<T>) _then) = __$ApiResponseCopyWithImpl;
 @override @useResult
 $Res call({
- bool success, T? data, String? message, Map<String, List<String>>? errors, PaginationMeta? meta
+ bool success, T? data, String? message, Map<String, List<String>>? errors,@JsonKey(fromJson: _metaFromJson) PaginationMeta? meta
 });
 
 

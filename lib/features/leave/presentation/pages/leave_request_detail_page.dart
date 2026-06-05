@@ -128,6 +128,12 @@ class _DetailCard extends StatelessWidget {
   final LeaveRequest request;
   const _DetailCard({required this.request});
 
+  static String _dayTypeLabel(bool isHalfDay, String? session) {
+    if (!isHalfDay) return 'Full Day';
+    if (session == 'afternoon') return '2nd Half';
+    return '1st Half';
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -138,17 +144,26 @@ class _DetailCard extends StatelessWidget {
           children: [
             _Row('Leave Type', request.leaveTypeName),
             _Row(
-              'Start Date',
-              HrmDateUtils.formatDisplay(
-                  DateTime.parse(request.startDate)),
+              'From',
+              HrmDateUtils.formatDisplay(DateTime.parse(request.startDate)),
             ),
             _Row(
-              'End Date',
-              HrmDateUtils.formatDisplay(
-                  DateTime.parse(request.endDate)),
+              'To',
+              HrmDateUtils.formatDisplay(DateTime.parse(request.endDate)),
             ),
-            _Row('Duration',
-                '${request.days.toStringAsFixed(1)} day(s)'),
+            _Row(
+              'Duration',
+              '${request.days.toStringAsFixed(1)} day(s)',
+            ),
+            _Row(
+              'Day Type',
+              _dayTypeLabel(request.isHalfDay, request.halfDaySession),
+            ),
+            if (request.createdAt != null)
+              _Row(
+                'Requested On',
+                HrmDateUtils.formatDisplay(DateTime.parse(request.createdAt!)),
+              ),
             _Row('Reason', request.reason),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),

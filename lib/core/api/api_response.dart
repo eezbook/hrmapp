@@ -10,7 +10,7 @@ abstract class ApiResponse<T> with _$ApiResponse<T> {
     T? data,
     String? message,
     Map<String, List<String>>? errors,
-    PaginationMeta? meta,
+    @JsonKey(fromJson: _metaFromJson) PaginationMeta? meta,
   }) = _ApiResponse;
 
   factory ApiResponse.fromJson(
@@ -33,6 +33,11 @@ abstract class PaginationMeta with _$PaginationMeta {
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) =>
       _$PaginationMetaFromJson(json);
+}
+
+PaginationMeta? _metaFromJson(dynamic json) {
+  if (json == null || json is List) return null;
+  return PaginationMeta.fromJson(json as Map<String, dynamic>);
 }
 
 class PaginatedResponse<T> {

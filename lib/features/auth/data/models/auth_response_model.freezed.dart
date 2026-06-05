@@ -221,12 +221,12 @@ return $default(_that.employee,_that.hrmPermissions,_that.token,_that.refreshTok
 @JsonSerializable()
 
 class _AuthResponseModel implements AuthResponseModel {
-  const _AuthResponseModel({required this.employee, required final  List<String> hrmPermissions, required this.token, this.refreshToken}): _hrmPermissions = hrmPermissions;
+  const _AuthResponseModel({required this.employee, final  List<String> hrmPermissions = const [], required this.token, this.refreshToken}): _hrmPermissions = hrmPermissions;
   factory _AuthResponseModel.fromJson(Map<String, dynamic> json) => _$AuthResponseModelFromJson(json);
 
 @override final  EmployeeModel employee;
  final  List<String> _hrmPermissions;
-@override List<String> get hrmPermissions {
+@override@JsonKey() List<String> get hrmPermissions {
   if (_hrmPermissions is EqualUnmodifiableListView) return _hrmPermissions;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_hrmPermissions);

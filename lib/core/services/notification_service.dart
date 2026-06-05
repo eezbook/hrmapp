@@ -42,15 +42,17 @@ class NotificationService {
   }
 
   Future<void> _setupFcm() async {
-    await FirebaseMessaging.instance.requestPermission();
-    _fcmToken = await FirebaseMessaging.instance.getToken();
-
-    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-      _fcmToken = token;
-    });
-
-    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+    try {
+      await FirebaseMessaging.instance.requestPermission();
+      _fcmToken = await FirebaseMessaging.instance.getToken();
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        _fcmToken = token;
+      });
+      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+    } catch (_) {
+      // Firebase not configured — push notifications disabled
+    }
   }
 
   Future<void> _onForegroundMessage(RemoteMessage message) async {

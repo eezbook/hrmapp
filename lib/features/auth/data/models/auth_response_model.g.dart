@@ -11,9 +11,11 @@ _AuthResponseModel _$AuthResponseModelFromJson(Map<String, dynamic> json) =>
       employee: EmployeeModel.fromJson(
         json['employee'] as Map<String, dynamic>,
       ),
-      hrmPermissions: (json['hrmPermissions'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
+      hrmPermissions:
+          (json['hrmPermissions'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       token: json['token'] as String,
       refreshToken: json['refreshToken'] as String?,
     );
