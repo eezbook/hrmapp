@@ -215,7 +215,7 @@ return $default(_that.id,_that.name,_that.code,_that.requiresDocument,_that.allo
 @JsonSerializable()
 
 class _LeaveTypeModel implements LeaveTypeModel {
-  const _LeaveTypeModel({required this.id, required this.name, required this.code, required this.requiresDocument, required this.allowHalfDay, required this.maxDays, this.color});
+  const _LeaveTypeModel({required this.id, required this.name, required this.code, required this.requiresDocument, required this.allowHalfDay, this.maxDays = 0, this.color});
   factory _LeaveTypeModel.fromJson(Map<String, dynamic> json) => _$LeaveTypeModelFromJson(json);
 
 @override final  int id;
@@ -223,7 +223,7 @@ class _LeaveTypeModel implements LeaveTypeModel {
 @override final  String code;
 @override final  bool requiresDocument;
 @override final  bool allowHalfDay;
-@override final  int maxDays;
+@override@JsonKey() final  int maxDays;
 @override final  String? color;
 
 /// Create a copy of LeaveTypeModel

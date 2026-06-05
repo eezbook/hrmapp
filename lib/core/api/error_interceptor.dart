@@ -72,9 +72,13 @@ class ErrorInterceptor extends Interceptor {
   Map<String, List<String>> _extractErrors(dynamic data) {
     if (data is Map<String, dynamic> && data['errors'] is Map) {
       final rawErrors = data['errors'] as Map<String, dynamic>;
-      return rawErrors.map(
-        (k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()),
-      );
+      return rawErrors.map((k, v) {
+        if (v is List) {
+          return MapEntry(k, v.map((e) => e.toString()).toList());
+        }
+        // Backend may return a plain string value (e.g. {"code": "HRM_AUTH_001"})
+        return MapEntry(k, [v.toString()]);
+      });
     }
     return {};
   }

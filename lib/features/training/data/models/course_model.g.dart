@@ -11,7 +11,7 @@ _CourseModel _$CourseModelFromJson(Map<String, dynamic> json) => _CourseModel(
   title: json['title'] as String,
   category: json['category'] as String,
   type: json['type'] as String,
-  durationMinutes: (json['durationMinutes'] as num).toInt(),
+  durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
   isMandatory: json['isMandatory'] as bool,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   description: json['description'] as String?,

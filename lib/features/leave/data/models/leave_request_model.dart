@@ -24,7 +24,7 @@ abstract class LeaveRequestModel with _$LeaveRequestModel {
     required String leaveTypeName,
     required String startDate,
     required String endDate,
-    required double days,
+    @Default(0.0) double days,
     required String status,
     required String reason,
     String? documentUrl,

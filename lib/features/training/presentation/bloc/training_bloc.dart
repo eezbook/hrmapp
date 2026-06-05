@@ -13,6 +13,7 @@ class TrainingBloc extends Bloc<TrainingEvent, TrainingState> {
     on<EnrollCourse>(_onEnroll);
     on<LoadMyLearning>(_onLoadMyLearning);
     on<LoadCertificates>(_onLoadCertificates);
+    on<SubmitTrainingRequest>(_onSubmitTrainingRequest);
   }
 
   Future<void> _onLoadCourses(
@@ -75,6 +76,17 @@ class TrainingBloc extends Bloc<TrainingEvent, TrainingState> {
     try {
       final res = await _remote.getCertificates();
       emit(CertificatesLoaded(res.data ?? []));
+    } catch (e) {
+      emit(TrainingError(ErrorHandler.handle(e)));
+    }
+  }
+
+  Future<void> _onSubmitTrainingRequest(
+      SubmitTrainingRequest event, Emitter<TrainingState> emit) async {
+    emit(TrainingLoading());
+    try {
+      await _remote.submitTrainingRequest(event.params);
+      emit(TrainingRequestSubmitted());
     } catch (e) {
       emit(TrainingError(ErrorHandler.handle(e)));
     }

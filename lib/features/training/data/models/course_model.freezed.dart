@@ -225,14 +225,14 @@ return $default(_that.id,_that.title,_that.category,_that.type,_that.durationMin
 @JsonSerializable()
 
 class _CourseModel implements CourseModel {
-  const _CourseModel({required this.id, required this.title, required this.category, required this.type, required this.durationMinutes, required this.isMandatory, this.thumbnailUrl, this.description, this.deadlineDate, this.rating, this.myProgress, this.isEnrolled, this.isCompleted, this.assessmentPassScore, this.assessmentAttemptsAllowed, this.hasAssessment, this.contentUrl});
+  const _CourseModel({required this.id, required this.title, required this.category, required this.type, this.durationMinutes = 0, required this.isMandatory, this.thumbnailUrl, this.description, this.deadlineDate, this.rating, this.myProgress, this.isEnrolled, this.isCompleted, this.assessmentPassScore, this.assessmentAttemptsAllowed, this.hasAssessment, this.contentUrl});
   factory _CourseModel.fromJson(Map<String, dynamic> json) => _$CourseModelFromJson(json);
 
 @override final  int id;
 @override final  String title;
 @override final  String category;
 @override final  String type;
-@override final  int durationMinutes;
+@override@JsonKey() final  int durationMinutes;
 @override final  bool isMandatory;
 @override final  String? thumbnailUrl;
 @override final  String? description;

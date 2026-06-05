@@ -11,7 +11,7 @@ _ExpenseItemModel _$ExpenseItemModelFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       category: json['category'] as String,
       description: json['description'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       date: json['date'] as String,
       receiptUrl: json['receiptUrl'] as String?,
       requiresReceipt: json['requiresReceipt'] as bool?,
@@ -34,7 +34,7 @@ _ExpenseClaimModel _$ExpenseClaimModelFromJson(Map<String, dynamic> json) =>
     _ExpenseClaimModel(
       id: (json['id'] as num).toInt(),
       title: json['title'] as String,
-      total: (json['total'] as num).toDouble(),
+      total: (json['total'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String,
       items: (json['items'] as List<dynamic>)
           .map((e) => ExpenseItemModel.fromJson(e as Map<String, dynamic>))

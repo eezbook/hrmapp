@@ -10,8 +10,8 @@ abstract class OvertimeRequestModel with _$OvertimeRequestModel {
     required String date,
     required String startTime,
     required String endTime,
-    required double hours,
-    required double amount,
+    @Default(0.0) double hours,
+    @Default(0.0) double amount,
     required String status,
     required String reason,
     String? approverComment,
@@ -28,9 +28,9 @@ abstract class OvertimeRequestModel with _$OvertimeRequestModel {
 @freezed
 abstract class OvertimeSummaryModel with _$OvertimeSummaryModel {
   const factory OvertimeSummaryModel({
-    required double totalApprovedHours,
-    required double totalAmount,
-    required int pendingCount,
+    @Default(0.0) double totalApprovedHours,
+    @Default(0.0) double totalAmount,
+    @Default(0) int pendingCount,
   }) = _OvertimeSummaryModel;
 
   factory OvertimeSummaryModel.fromJson(Map<String, dynamic> json) =>

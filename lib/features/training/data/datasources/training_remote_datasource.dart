@@ -57,4 +57,11 @@ abstract class TrainingRemoteDataSource {
 
   @GET('training/my-learning')
   Future<ApiResponse<dynamic>> getMyLearning();
+
+  // TODO: backend — HrmMobileTrainingController needs a store() method
+  // at POST training/requests to accept training request submissions.
+  @POST('training/requests')
+  Future<ApiResponse<dynamic>> submitTrainingRequest(
+    @Body() Map<String, dynamic> body,
+  );
 }

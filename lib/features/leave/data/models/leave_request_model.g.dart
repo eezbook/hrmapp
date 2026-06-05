@@ -30,7 +30,7 @@ _LeaveRequestModel _$LeaveRequestModelFromJson(Map<String, dynamic> json) =>
       leaveTypeName: json['leaveTypeName'] as String,
       startDate: json['startDate'] as String,
       endDate: json['endDate'] as String,
-      days: (json['days'] as num).toDouble(),
+      days: (json['days'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String,
       reason: json['reason'] as String,
       documentUrl: json['documentUrl'] as String?,

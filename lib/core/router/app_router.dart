@@ -26,6 +26,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/training/presentation/bloc/assessment_cubit.dart';
 import '../../features/training/presentation/bloc/course_player_cubit.dart';
 import '../../features/training/presentation/bloc/training_bloc.dart';
+import '../../features/training/presentation/pages/add_training_request_page.dart';
 import '../../features/training/presentation/pages/assessment_page.dart';
 import '../../features/training/presentation/pages/course_player_page.dart';
 import '../../features/training/presentation/pages/training_home_page.dart';
@@ -222,6 +223,14 @@ class AppRouter {
               ),
               routes: [
                 GoRoute(
+                  path: 'request',
+                  name: RouteNames.trainingRequest,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<TrainingBloc>(),
+                    child: const AddTrainingRequestPage(),
+                  ),
+                ),
+                GoRoute(
                   path: ':courseId',
                   name: RouteNames.courseDetail,
                   builder: (context, state) => BlocProvider(
@@ -266,12 +275,14 @@ class AppRouter {
                     create: (_) => getIt<TrainingBloc>(),
                     child: const TrainingHomePage(),
                   ),
-                ),
-                GoRoute(
-                  path: 'certificates/:id',
-                  name: RouteNames.certificateView,
-                  builder: (context, state) =>
-                      const SizedBox.shrink(), // CertificateViewPage
+                  routes: [
+                    GoRoute(
+                      path: ':id',
+                      name: RouteNames.certificateView,
+                      builder: (context, state) =>
+                          const SizedBox.shrink(), // CertificateViewPage
+                    ),
+                  ],
                 ),
               ],
             ),

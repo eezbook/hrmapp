@@ -42,6 +42,7 @@ class CertificatesLoaded extends TrainingState {
 }
 
 class EnrolledSuccess extends TrainingState {}
+class TrainingRequestSubmitted extends TrainingState {}
 
 class TrainingError extends TrainingState {
   final Failure failure;

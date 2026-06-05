@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEV flavor only — allows plain HTTP to local development servers.
+  This file overrides the main network_security_config.xml for the dev build.
+  Production / staging builds use the strict config in src/main/res/xml/.
+-->
+<network-security-config>
+    <!-- Allow cleartext (HTTP) to local dev machines -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

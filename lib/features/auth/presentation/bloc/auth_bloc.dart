@@ -132,7 +132,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<Map<String, String>> _getDeviceData() async {
     try {
-      if (defaultTargetPlatform == TargetPlatform.android) {
+      if (kIsWeb) {
+        final info = await _deviceInfo.webBrowserInfo;
+        return {
+          'device_id': info.userAgent ?? 'web',
+          'device_name': info.browserName.name,
+          'device_type': 'android', // remote API only accepts android/ios; update when server accepts 'web'
+        };
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
         final info = await _deviceInfo.androidInfo;
         return {
           'device_id': info.id,
@@ -151,7 +158,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     return {
       'device_id': 'unknown',
       'device_name': 'unknown',
-      'device_type': 'unknown',
+      'device_type': 'web',
     };
   }
 }
