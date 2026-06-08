@@ -100,7 +100,7 @@ class _ExpenseClaimPageState extends State<ExpenseClaimPage> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _claimDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: DateTime.now(),
       lastDate:  DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) setState(() => _claimDate = picked);
@@ -110,7 +110,7 @@ class _ExpenseClaimPageState extends State<ExpenseClaimPage> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _itemDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: DateTime.now(),
       lastDate:  DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) setState(() => _itemDate = picked);

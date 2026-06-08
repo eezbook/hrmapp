@@ -150,15 +150,14 @@ class AttendanceCubit extends Cubit<AttendanceState> {
     emit(current.copyWith(punchStatus: PunchStatus.loading, punchError: null));
 
     try {
-      // 1. Fetch company location from system settings
-      final locationResp = await _remote.getCompanyLocation();
-      final company = locationResp.data;
+      // 1. Fetch both office and home locations
+      final locationResp = await _remote.getAttendanceLocations();
+      final locations = locationResp.data;
 
-      if (company == null) {
+      if (locations == null || (locations.office == null && locations.home == null)) {
         emit(current.copyWith(
           punchStatus: PunchStatus.error,
-          punchError:
-              'Company location is not configured. Please contact your administrator.',
+          punchError: 'Attendance location is not configured. Please contact your administrator.',
         ));
         return;
       }
@@ -166,31 +165,52 @@ class AttendanceCubit extends Cubit<AttendanceState> {
       // 2. Get the employee's current GPS position
       final position = await _location.getCurrentPosition();
 
-      // 3. Check geofence
-      final withinRadius = _location.isWithinRadius(
-        userLat: position.latitude,
-        userLon: position.longitude,
-        targetLat: company.latitude,
-        targetLon: company.longitude,
-        radiusMeters: company.radius,
-      );
+      // 3. Check office first, then home
+      String? matchedType;
 
-      if (!withinRadius) {
+      if (locations.office != null) {
+        final withinOffice = _location.isWithinRadius(
+          userLat: position.latitude,
+          userLon: position.longitude,
+          targetLat: locations.office!.latitude,
+          targetLon: locations.office!.longitude,
+          radiusMeters: locations.office!.radius,
+        );
+        if (withinOffice) matchedType = 'office';
+      }
+
+      if (matchedType == null && locations.home != null) {
+        final withinHome = _location.isWithinRadius(
+          userLat: position.latitude,
+          userLon: position.longitude,
+          targetLat: locations.home!.latitude,
+          targetLon: locations.home!.longitude,
+          radiusMeters: locations.home!.radius,
+        );
+        if (withinHome) matchedType = 'home';
+      }
+
+      if (matchedType == null) {
+        final parts = <String>[];
+        if (locations.office != null) parts.add(locations.office!.locationName.isNotEmpty ? locations.office!.locationName : 'company office');
+        if (locations.home != null) parts.add(locations.home!.locationName.isNotEmpty ? locations.home!.locationName : 'home');
+        final hint = parts.isNotEmpty ? ' (${parts.join(' or ')})' : '';
         emit(current.copyWith(
           punchStatus: PunchStatus.error,
-          punchError:
-              'You are outside the company premises. Please go within the location in order to check in or check out.',
+          punchError: 'You are not within any allowed location$hint. Please go within the location to check in or check out.',
         ));
         return;
       }
 
-      // 4. Call the API
+      // 4. Call the API, passing which location type matched
       final body = {
         'latitude': position.latitude,
         'longitude': position.longitude,
+        'location_type': matchedType,
       };
-      final resp =
-          isCheckIn ? await _remote.checkIn(body) : await _remote.checkOut(body);
+      final resp = isCheckIn
+          ? await _remote.checkIn(body)
+          : await _remote.checkOut(body);
 
       // 5. Emit success with the fresh today record
       emit(current.copyWith(

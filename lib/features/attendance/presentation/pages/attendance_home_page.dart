@@ -6,7 +6,6 @@ import '../../../../core/config/route_names.dart';
 import '../../../../core/storage/hive_storage.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/attendance_record_model.dart';
-import '../../data/models/attendance_summary_model.dart';
 import '../cubit/attendance_cubit.dart';
 
 const _navy   = Color(0xFF1B2064);
@@ -130,7 +129,7 @@ class _AttendanceHomePageState extends State<AttendanceHomePage> {
                                 context.read<AttendanceCubit>().checkOut(),
                           ),
                           const SizedBox(height: 20),
-                          _WeeklyAttendanceCard(summary: state.summary),
+                          _WeeklyAttendanceCard(state: state),
                           const SizedBox(height: 24),
                           Text(
                             'Attendance',
@@ -535,31 +534,36 @@ class _AttendanceHeader extends StatelessWidget {
   }
 }
 
-// ── Weekly Attendance Card ─────────────────────────────────────────────────────
+// ── Monthly Attendance Card ────────────────────────────────────────────────────
 
 class _WeeklyAttendanceCard extends StatelessWidget {
-  final AttendanceSummaryModel summary;
-  const _WeeklyAttendanceCard({required this.summary});
+  final AttendanceLoaded state;
+  const _WeeklyAttendanceCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateLabel = '${now.day}/${now.month}/${now.year}';
+    final summary = state.summary;
+    final cubit   = context.read<AttendanceCubit>();
 
-    final segments = <_DonutSegment>[
-      _DonutSegment(summary.presentDays.toDouble(), _clrPresent),
-      _DonutSegment(summary.halfDays.toDouble(),    _clrExDelay),
-      _DonutSegment(summary.absentDays.toDouble(),  _clrAbsent),
-      _DonutSegment(summary.leaveDays.toDouble(),   _clrLeave),
-      _DonutSegment(summary.travelDays.toDouble(),  _clrVisit),
-      _DonutSegment(summary.weekendDays.toDouble(), _clrWeekend),
-      _DonutSegment(summary.lateDays.toDouble(),    _clrDelay),
-      _DonutSegment(summary.holidayDays.toDouble(), _clrHoliday),
-    ].where((s) => s.value > 0).toList();
+    final legendData = [
+      _LegendData(_clrPresent,  'Present',  summary.presentDays),
+      _LegendData(_clrAbsent,   'Absent',   summary.absentDays),
+      _LegendData(_clrLeave,    'Leave',    summary.leaveDays),
+      _LegendData(_clrDelay,    'Late',     summary.lateDays),
+      _LegendData(_clrExDelay,  'Half Day', summary.halfDays),
+      _LegendData(_clrVisit,    'Travel',   summary.travelDays),
+      _LegendData(_clrWeekend,  'Weekend',  summary.weekendDays),
+      _LegendData(_clrHoliday,  'Holiday',  summary.holidayDays),
+    ];
 
-    if (segments.isEmpty) {
-      segments.add(_DonutSegment(1, _clrLeave));
-    }
+    final segments = legendData
+        .where((d) => d.count > 0)
+        .map((d) => _DonutSegment(d.count.toDouble(), d.color))
+        .toList();
+
+    if (segments.isEmpty) segments.add(_DonutSegment(1, _clrLeave));
+
+    final pct = summary.attendancePercentage.toStringAsFixed(0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -577,44 +581,65 @@ class _WeeklyAttendanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Weekly Attendance',
-            style: AppTextStyles.titleSmall.copyWith(
-              color: _navy,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 20),
+          // ── Header with month navigation ──────────────────────────────────
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                summary.monthName,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: _navy,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              Row(
+                children: [
+                  _NavButton(
+                    icon: Icons.chevron_left_rounded,
+                    onTap: cubit.prevMonth,
+                  ),
+                  const SizedBox(width: 4),
+                  _NavButton(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: cubit.canGoNext ? cubit.nextMonth : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Donut + legend ────────────────────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 150,
-                height: 150,
+                width: 140,
+                height: 140,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     CustomPaint(
-                      size: const Size(150, 150),
+                      size: const Size(140, 140),
                       painter: _DonutPainter(segments: segments),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Present',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: _clrPresent,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                          '$pct%',
+                          style: AppTextStyles.titleLarge.copyWith(
+                            color: _navy,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 22,
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
-                          dateLabel,
+                          'Attendance',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: Colors.grey.shade500,
-                            fontSize: 11,
+                            fontSize: 10,
                           ),
                         ),
                       ],
@@ -622,23 +647,55 @@ class _WeeklyAttendanceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    _LegendItem(color: _clrPresent, label: 'Present'),
-                    _LegendItem(color: _clrExDelay, label: 'Ex. Delay'),
-                    _LegendItem(color: _clrAbsent,  label: 'Absent'),
-                    _LegendItem(color: _clrLeave,   label: 'Leave'),
-                    _LegendItem(color: _clrVisit,   label: 'Visit'),
-                    _LegendItem(color: _clrWeekend, label: 'Weekend'),
-                    _LegendItem(color: _clrDelay,   label: 'Delay'),
-                    _LegendItem(color: _clrHoliday, label: 'Holiday'),
-                  ],
+                  children: legendData
+                      .where((d) => d.count > 0)
+                      .map((d) => _LegendItem(
+                            color: d.color,
+                            label: d.label,
+                            count: d.count,
+                          ))
+                      .toList(),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Stats row ─────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            decoration: BoxDecoration(
+              color: _pageBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _StatPill(
+                  label: 'Working Days',
+                  value: '${summary.workingDays}',
+                  color: _navy,
+                ),
+                _StatPill(
+                  label: 'Present',
+                  value: '${summary.presentDays}',
+                  color: _clrPresent,
+                ),
+                _StatPill(
+                  label: 'Absent',
+                  value: '${summary.absentDays}',
+                  color: _clrAbsent,
+                ),
+                _StatPill(
+                  label: 'Avg Hrs',
+                  value: summary.averageWorkingHours.toStringAsFixed(1),
+                  color: _purple,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -646,29 +703,108 @@ class _WeeklyAttendanceCard extends StatelessWidget {
   }
 }
 
+class _LegendData {
+  final Color color;
+  final String label;
+  final int count;
+  const _LegendData(this.color, this.label, this.count);
+}
+
 class _LegendItem extends StatelessWidget {
   final Color color;
   final String label;
-  const _LegendItem({required this.color, required this.label});
+  final int count;
+  const _LegendItem({required this.color, required this.label, required this.count});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           Container(
-            width: 10,
-            height: 10,
+            width: 9,
+            height: 9,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.grey.shade600,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: _navy,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _NavButton({required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: active ? _navy.withOpacity(0.08) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: active ? _navy : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _StatPill({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             label,
             style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.grey.shade700,
-              fontSize: 12,
+              color: Colors.grey.shade500,
+              fontSize: 9,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

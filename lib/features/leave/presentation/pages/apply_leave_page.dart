@@ -280,8 +280,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                       Text('Select Dates', style: AppTextStyles.titleSmall),
                       const SizedBox(height: AppSpacing.sm),
                       TableCalendar(
-                        firstDay: DateTime.now()
-                            .subtract(const Duration(days: 365)),
+                        firstDay: DateTime.now(),
                         lastDay: DateTime.now()
                             .add(const Duration(days: 365)),
                         focusedDay: _focusedDay,
