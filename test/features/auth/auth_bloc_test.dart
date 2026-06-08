@@ -4,7 +4,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hrmapp/core/error/failures.dart';
 import 'package:hrmapp/core/services/biometric_service.dart';
-import 'package:hrmapp/core/services/notification_service.dart';
 import 'package:hrmapp/core/storage/secure_storage.dart';
 import 'package:hrmapp/features/auth/domain/entities/employee.dart';
 import 'package:hrmapp/features/auth/domain/repositories/auth_repository.dart';
@@ -20,7 +19,6 @@ class MockGetMeUseCase extends Mock implements GetMeUseCase {}
 class MockAuthRepository extends Mock implements AuthRepository {}
 class MockSecureStorage extends Mock implements SecureStorage {}
 class MockBiometricService extends Mock implements BiometricService {}
-class MockNotificationService extends Mock implements NotificationService {}
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
 void main() {
@@ -30,7 +28,6 @@ void main() {
   late MockAuthRepository authRepository;
   late MockSecureStorage secureStorage;
   late MockBiometricService biometricService;
-  late MockNotificationService notificationService;
   late MockDeviceInfoPlugin deviceInfo;
 
   const testEmployee = Employee(
@@ -45,10 +42,8 @@ void main() {
     authRepository = MockAuthRepository();
     secureStorage = MockSecureStorage();
     biometricService = MockBiometricService();
-    notificationService = MockNotificationService();
     deviceInfo = MockDeviceInfoPlugin();
 
-    when(() => notificationService.fcmToken).thenReturn(null);
     when(() => secureStorage.read(any())).thenAnswer((_) async => null);
 
     bloc = AuthBloc(
@@ -57,7 +52,6 @@ void main() {
       authRepository: authRepository,
       secureStorage: secureStorage,
       biometricService: biometricService,
-      notificationService: notificationService,
       deviceInfo: deviceInfo,
     );
   });

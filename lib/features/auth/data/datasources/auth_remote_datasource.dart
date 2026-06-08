@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../../../core/api/api_response.dart';
 import '../models/auth_response_model.dart';
+import '../models/company_model.dart';
 import '../models/employee_model.dart';
 
 part 'auth_remote_datasource.g.dart';
@@ -17,6 +18,9 @@ abstract class AuthRemoteDataSource {
 
   @GET('auth/me')
   Future<ApiResponse<EmployeeModel>> getMe();
+
+  @GET('auth/companies')
+  Future<ApiResponse<List<CompanyModel>>> getCompanies();
 
   @POST('auth/refresh')
   Future<ApiResponse<AuthResponseModel>> refreshToken(

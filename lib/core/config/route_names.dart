@@ -37,6 +37,9 @@ abstract class RouteNames {
   static const overtimeDetail = 'overtime-detail';
   static const overtimeApprovals = 'overtime-approvals';
 
+  // Attendance
+  static const attendance = 'attendance';
+
   // Notifications
   static const notifications = 'notifications';
 

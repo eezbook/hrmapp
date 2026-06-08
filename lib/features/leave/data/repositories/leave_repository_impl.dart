@@ -103,7 +103,7 @@ class LeaveRepositoryImpl implements LeaveRepository {
   @override
   Future<Either<Failure, void>> rejectRequest(int id, String comment) async {
     try {
-      await _remote.rejectRequest(id, {'comment': comment});
+      await _remote.rejectRequest(id, {'reason': comment});
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EmployeeModel {
 
- int get id; String get name; String get email; String? get photo; String? get designation; String? get department; String? get employeeCode; String? get phone; String? get role; String? get joinDate;
+ int get id; String get name; String get email; String? get photo; String? get designation; String? get department; String? get employeeCode; String? get phone; String? get role; String? get joinDate; String? get companyName; List<String>? get hrmPermissions;
 /// Create a copy of EmployeeModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $EmployeeModelCopyWith<EmployeeModel> get copyWith => _$EmployeeModelCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.designation, designation) || other.designation == designation)&&(identical(other.department, department) || other.department == department)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.designation, designation) || other.designation == designation)&&(identical(other.department, department) || other.department == department)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.companyName, companyName) || other.companyName == companyName)&&const DeepCollectionEquality().equals(other.hrmPermissions, hrmPermissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,email,photo,designation,department,employeeCode,phone,role,joinDate);
+int get hashCode => Object.hash(runtimeType,id,name,email,photo,designation,department,employeeCode,phone,role,joinDate,companyName,const DeepCollectionEquality().hash(hrmPermissions));
 
 @override
 String toString() {
-  return 'EmployeeModel(id: $id, name: $name, email: $email, photo: $photo, designation: $designation, department: $department, employeeCode: $employeeCode, phone: $phone, role: $role, joinDate: $joinDate)';
+  return 'EmployeeModel(id: $id, name: $name, email: $email, photo: $photo, designation: $designation, department: $department, employeeCode: $employeeCode, phone: $phone, role: $role, joinDate: $joinDate, companyName: $companyName, hrmPermissions: $hrmPermissions)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $EmployeeModelCopyWith<$Res>  {
   factory $EmployeeModelCopyWith(EmployeeModel value, $Res Function(EmployeeModel) _then) = _$EmployeeModelCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String email, String? photo, String? designation, String? department, String? employeeCode, String? phone, String? role, String? joinDate
+ int id, String name, String email, String? photo, String? designation, String? department, String? employeeCode, String? phone, String? role, String? joinDate, String? companyName, List<String>? hrmPermissions
 });
 
 
@@ -65,7 +65,7 @@ class _$EmployeeModelCopyWithImpl<$Res>
 
 /// Create a copy of EmployeeModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? email = null,Object? photo = freezed,Object? designation = freezed,Object? department = freezed,Object? employeeCode = freezed,Object? phone = freezed,Object? role = freezed,Object? joinDate = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? email = null,Object? photo = freezed,Object? designation = freezed,Object? department = freezed,Object? employeeCode = freezed,Object? phone = freezed,Object? role = freezed,Object? joinDate = freezed,Object? companyName = freezed,Object? hrmPermissions = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -77,7 +77,9 @@ as String?,employeeCode: freezed == employeeCode ? _self.employeeCode : employee
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String?,joinDate: freezed == joinDate ? _self.joinDate : joinDate // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,companyName: freezed == companyName ? _self.companyName : companyName // ignore: cast_nullable_to_non_nullable
+as String?,hrmPermissions: freezed == hrmPermissions ? _self.hrmPermissions : hrmPermissions // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 
@@ -162,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate,  String? companyName,  List<String>? hrmPermissions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EmployeeModel() when $default != null:
-return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate);case _:
+return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate,_that.companyName,_that.hrmPermissions);case _:
   return orElse();
 
 }
@@ -183,10 +185,10 @@ return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate,  String? companyName,  List<String>? hrmPermissions)  $default,) {final _that = this;
 switch (_that) {
 case _EmployeeModel():
-return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate);case _:
+return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate,_that.companyName,_that.hrmPermissions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +205,10 @@ return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String email,  String? photo,  String? designation,  String? department,  String? employeeCode,  String? phone,  String? role,  String? joinDate,  String? companyName,  List<String>? hrmPermissions)?  $default,) {final _that = this;
 switch (_that) {
 case _EmployeeModel() when $default != null:
-return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate);case _:
+return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_that.department,_that.employeeCode,_that.phone,_that.role,_that.joinDate,_that.companyName,_that.hrmPermissions);case _:
   return null;
 
 }
@@ -218,7 +220,7 @@ return $default(_that.id,_that.name,_that.email,_that.photo,_that.designation,_t
 @JsonSerializable()
 
 class _EmployeeModel implements EmployeeModel {
-  const _EmployeeModel({required this.id, required this.name, required this.email, this.photo, this.designation, this.department, this.employeeCode, this.phone, this.role, this.joinDate});
+  const _EmployeeModel({required this.id, required this.name, required this.email, this.photo, this.designation, this.department, this.employeeCode, this.phone, this.role, this.joinDate, this.companyName, final  List<String>? hrmPermissions}): _hrmPermissions = hrmPermissions;
   factory _EmployeeModel.fromJson(Map<String, dynamic> json) => _$EmployeeModelFromJson(json);
 
 @override final  int id;
@@ -231,6 +233,16 @@ class _EmployeeModel implements EmployeeModel {
 @override final  String? phone;
 @override final  String? role;
 @override final  String? joinDate;
+@override final  String? companyName;
+ final  List<String>? _hrmPermissions;
+@override List<String>? get hrmPermissions {
+  final value = _hrmPermissions;
+  if (value == null) return null;
+  if (_hrmPermissions is EqualUnmodifiableListView) return _hrmPermissions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of EmployeeModel
 /// with the given fields replaced by the non-null parameter values.
@@ -245,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.designation, designation) || other.designation == designation)&&(identical(other.department, department) || other.department == department)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.designation, designation) || other.designation == designation)&&(identical(other.department, department) || other.department == department)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinDate, joinDate) || other.joinDate == joinDate)&&(identical(other.companyName, companyName) || other.companyName == companyName)&&const DeepCollectionEquality().equals(other._hrmPermissions, _hrmPermissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,email,photo,designation,department,employeeCode,phone,role,joinDate);
+int get hashCode => Object.hash(runtimeType,id,name,email,photo,designation,department,employeeCode,phone,role,joinDate,companyName,const DeepCollectionEquality().hash(_hrmPermissions));
 
 @override
 String toString() {
-  return 'EmployeeModel(id: $id, name: $name, email: $email, photo: $photo, designation: $designation, department: $department, employeeCode: $employeeCode, phone: $phone, role: $role, joinDate: $joinDate)';
+  return 'EmployeeModel(id: $id, name: $name, email: $email, photo: $photo, designation: $designation, department: $department, employeeCode: $employeeCode, phone: $phone, role: $role, joinDate: $joinDate, companyName: $companyName, hrmPermissions: $hrmPermissions)';
 }
 
 
@@ -265,7 +277,7 @@ abstract mixin class _$EmployeeModelCopyWith<$Res> implements $EmployeeModelCopy
   factory _$EmployeeModelCopyWith(_EmployeeModel value, $Res Function(_EmployeeModel) _then) = __$EmployeeModelCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String email, String? photo, String? designation, String? department, String? employeeCode, String? phone, String? role, String? joinDate
+ int id, String name, String email, String? photo, String? designation, String? department, String? employeeCode, String? phone, String? role, String? joinDate, String? companyName, List<String>? hrmPermissions
 });
 
 
@@ -282,7 +294,7 @@ class __$EmployeeModelCopyWithImpl<$Res>
 
 /// Create a copy of EmployeeModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? email = null,Object? photo = freezed,Object? designation = freezed,Object? department = freezed,Object? employeeCode = freezed,Object? phone = freezed,Object? role = freezed,Object? joinDate = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? email = null,Object? photo = freezed,Object? designation = freezed,Object? department = freezed,Object? employeeCode = freezed,Object? phone = freezed,Object? role = freezed,Object? joinDate = freezed,Object? companyName = freezed,Object? hrmPermissions = freezed,}) {
   return _then(_EmployeeModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -294,7 +306,9 @@ as String?,employeeCode: freezed == employeeCode ? _self.employeeCode : employee
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String?,joinDate: freezed == joinDate ? _self.joinDate : joinDate // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,companyName: freezed == companyName ? _self.companyName : companyName // ignore: cast_nullable_to_non_nullable
+as String?,hrmPermissions: freezed == hrmPermissions ? _self._hrmPermissions : hrmPermissions // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 

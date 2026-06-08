@@ -9,6 +9,7 @@ import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/company_model.dart';
 import '../models/employee_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -24,7 +25,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String deviceId,
     required String deviceName,
     required String deviceType,
-    String? fcmToken,
   }) async {
     try {
       final response = await _remote.login({
@@ -33,7 +33,6 @@ class AuthRepositoryImpl implements AuthRepository {
         'device_id': deviceId,
         'device_name': deviceName,
         'device_type': deviceType,
-        if (fcmToken != null) 'fcm_token': fcmToken,
       });
       final data = response.data!;
       await _secure.write(SecureKeys.authToken, data.token);
@@ -57,6 +56,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final response = await _remote.getMe();
       final model = response.data!;
+      if (model.hrmPermissions != null) {
+        HrmPermissions.load(model.hrmPermissions!);
+      }
       _cacheEmployee(model);
       return Right(_mapEmployee(model));
     } catch (e) {
@@ -66,15 +68,31 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> logout() async {
+    // Clear local state immediately so the UI responds instantly.
+    await _secure.deleteAll();
+    await HiveStorage.employee.clear();
+    HrmPermissions.clear();
+    // Best-effort server-side token revocation.
     try {
       await _remote.logout();
-      return const Right(null);
+    } catch (_) {}
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<CompanyModel>>> getCompanies() async {
+    try {
+      final response = await _remote.getCompanies();
+      return Right(response.data ?? []);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
-    } finally {
-      await _secure.deleteAll();
-      HrmPermissions.clear();
     }
+  }
+
+  @override
+  Future<void> switchCompany(int companyId) async {
+    await _secure.write(SecureKeys.selectedCompanyId, companyId.toString());
+    await HiveStorage.employee.clear();
   }
 
   @override

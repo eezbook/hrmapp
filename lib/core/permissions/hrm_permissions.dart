@@ -21,6 +21,9 @@ abstract class Permissions {
   static const overtimeApprove = 'hrm.overtime.approve';
   static const overtimeManage = 'hrm.overtime.manage';
 
+  // Attendance
+  static const attendanceView = 'hrm.attendance.view';
+
   // Reports
   static const reportsView = 'hrm.reports.view';
 }
@@ -50,6 +53,7 @@ class HrmPermissions {
   static bool get canEnrollTraining => has(Permissions.trainingEnroll);
   static bool get canApplyOvertime => has(Permissions.overtimeApply);
   static bool get canApproveOvertime => has(Permissions.overtimeApprove);
+  static bool get canViewAttendance => true; // all employees can view their own attendance
   static bool get canViewReports => has(Permissions.reportsView);
 
   static void clear() {
