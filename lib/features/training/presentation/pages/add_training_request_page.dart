@@ -188,8 +188,7 @@ class _AddTrainingRequestPageState extends State<AddTrainingRequestPage> {
                     style: AppTextStyles.titleSmall),
                 const SizedBox(height: AppSpacing.sm),
                 TableCalendar(
-                  firstDay: DateTime.now()
-                      .subtract(const Duration(days: 365)),
+                  firstDay: DateTime.now(),
                   lastDay: DateTime.now()
                       .add(const Duration(days: 730)),
                   focusedDay: _focusedDay,

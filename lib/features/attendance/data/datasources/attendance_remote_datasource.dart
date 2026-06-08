@@ -3,7 +3,7 @@ import 'package:retrofit/retrofit.dart';
 import '../../../../core/api/api_response.dart';
 import '../models/attendance_record_model.dart';
 import '../models/attendance_summary_model.dart';
-import '../models/company_location_model.dart';
+import '../models/attendance_locations_model.dart';
 
 part 'attendance_remote_datasource.g.dart';
 
@@ -37,5 +37,5 @@ abstract class AttendanceRemoteDataSource {
   );
 
   @GET('attendance/location')
-  Future<ApiResponse<CompanyLocationModel>> getCompanyLocation();
+  Future<ApiResponse<AttendanceLocationsModel>> getAttendanceLocations();
 }

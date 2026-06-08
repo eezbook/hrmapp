@@ -192,12 +192,12 @@ class _AttendanceRemoteDataSource implements AttendanceRemoteDataSource {
   }
 
   @override
-  Future<ApiResponse<CompanyLocationModel>> getCompanyLocation() async {
+  Future<ApiResponse<AttendanceLocationsModel>> getAttendanceLocations() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ApiResponse<CompanyLocationModel>>(
+    final _options = _setStreamType<ApiResponse<AttendanceLocationsModel>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -208,11 +208,12 @@ class _AttendanceRemoteDataSource implements AttendanceRemoteDataSource {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ApiResponse<CompanyLocationModel> _value;
+    late ApiResponse<AttendanceLocationsModel> _value;
     try {
-      _value = ApiResponse<CompanyLocationModel>.fromJson(
+      _value = ApiResponse<AttendanceLocationsModel>.fromJson(
         _result.data!,
-        (json) => CompanyLocationModel.fromJson(json as Map<String, dynamic>),
+        (json) =>
+            AttendanceLocationsModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
