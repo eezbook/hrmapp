@@ -21,6 +21,12 @@ import '../../features/leave/data/datasources/leave_remote_datasource.dart';
 import '../../features/leave/data/repositories/leave_repository_impl.dart';
 import '../../features/leave/domain/repositories/leave_repository.dart';
 import '../../features/leave/presentation/bloc/leave_bloc.dart';
+import '../../features/leave/presentation/cubit/leave_balance_cubit.dart';
+import '../../features/leave/presentation/cubit/leave_requests_cubit.dart';
+import '../../features/leave/presentation/cubit/leave_approvals_cubit.dart';
+import '../../features/attendance/data/datasources/attendance_remote_datasource.dart';
+import '../../features/attendance/presentation/cubit/attendance_cubit.dart';
+import '../services/location_service.dart';
 import '../../features/notifications/data/datasources/notifications_remote_datasource.dart';
 import '../../features/overtime/data/datasources/overtime_remote_datasource.dart';
 import '../../features/overtime/presentation/cubit/overtime_cubit.dart';
@@ -65,6 +71,7 @@ Future<void> configureDependencies() async {
 
   getIt.registerSingleton<BiometricService>(BiometricService());
   getIt.registerSingleton<NotificationService>(NotificationService());
+  getIt.registerSingleton<LocationService>(LocationService());
 
   // Remote DataSources
   getIt.registerLazySingleton<AuthRemoteDataSource>(
@@ -84,6 +91,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerLazySingleton<OvertimeRemoteDataSource>(
     () => OvertimeRemoteDataSource(getIt<DioClient>().dio),
+  );
+  getIt.registerLazySingleton<AttendanceRemoteDataSource>(
+    () => AttendanceRemoteDataSource(getIt<DioClient>().dio),
   );
   getIt.registerLazySingleton<NotificationsRemoteDataSource>(
     () => NotificationsRemoteDataSource(getIt<DioClient>().dio),
@@ -112,22 +122,32 @@ Future<void> configureDependencies() async {
   );
 
   // BLoCs / Cubits
-  getIt.registerFactory<AuthBloc>(
-    () => AuthBloc(
-      loginUseCase: getIt<LoginUseCase>(),
-      getMeUseCase: getIt<GetMeUseCase>(),
-      authRepository: getIt<AuthRepository>(),
-      secureStorage: getIt<SecureStorage>(),
-      biometricService: getIt<BiometricService>(),
-      notificationService: getIt<NotificationService>(),
-      deviceInfo: getIt<DeviceInfoPlugin>(),
-    ),
+  // AuthBloc is a singleton: AppRouter and the widget tree must share the
+  // same instance so GoRouterRefreshStream and BlocProvider see the same state.
+  final authBloc = AuthBloc(
+    loginUseCase: getIt<LoginUseCase>(),
+    getMeUseCase: getIt<GetMeUseCase>(),
+    authRepository: getIt<AuthRepository>(),
+    secureStorage: getIt<SecureStorage>(),
+    biometricService: getIt<BiometricService>(),
+    deviceInfo: getIt<DeviceInfoPlugin>(),
   );
+  getIt.registerSingleton<AuthBloc>(authBloc);
+
   getIt.registerFactory<DashboardCubit>(
     () => DashboardCubit(getIt<DashboardRemoteDataSource>()),
   );
   getIt.registerFactory<LeaveBloc>(
     () => LeaveBloc(getIt<LeaveRepository>()),
+  );
+  getIt.registerFactory<LeaveBalanceCubit>(
+    () => LeaveBalanceCubit(getIt<LeaveRepository>()),
+  );
+  getIt.registerFactory<LeaveRequestsCubit>(
+    () => LeaveRequestsCubit(getIt<LeaveRepository>()),
+  );
+  getIt.registerFactory<LeaveApprovalsCubit>(
+    () => LeaveApprovalsCubit(getIt<LeaveRepository>()),
   );
   getIt.registerFactory<TravelBloc>(
     () => TravelBloc(getIt<TravelRepository>()),
@@ -135,11 +155,16 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<TrainingBloc>(
     () => TrainingBloc(getIt<TrainingRemoteDataSource>()),
   );
+  getIt.registerFactory<AttendanceCubit>(
+    () => AttendanceCubit(
+      getIt<AttendanceRemoteDataSource>(),
+      getIt<LocationService>(),
+    ),
+  );
   getIt.registerFactory<OvertimeCubit>(
     () => OvertimeCubit(getIt<OvertimeRemoteDataSource>()),
   );
 
   // Router (singleton because it holds navigation state)
-  final authBloc = getIt<AuthBloc>();
-  getIt.registerSingleton<AppRouter>(AppRouter(authBloc));
+  getIt.registerSingleton<AppRouter>(AppRouter(getIt<AuthBloc>()));
 }

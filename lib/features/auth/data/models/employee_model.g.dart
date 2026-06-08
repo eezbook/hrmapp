@@ -18,6 +18,10 @@ _EmployeeModel _$EmployeeModelFromJson(Map<String, dynamic> json) =>
       phone: json['phone'] as String?,
       role: json['role'] as String?,
       joinDate: json['joinDate'] as String?,
+      companyName: json['companyName'] as String?,
+      hrmPermissions: (json['hrmPermissions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$EmployeeModelToJson(_EmployeeModel instance) =>
@@ -32,4 +36,6 @@ Map<String, dynamic> _$EmployeeModelToJson(_EmployeeModel instance) =>
       'phone': instance.phone,
       'role': instance.role,
       'joinDate': instance.joinDate,
+      'companyName': instance.companyName,
+      'hrmPermissions': instance.hrmPermissions,
     };

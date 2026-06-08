@@ -44,20 +44,15 @@
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
     <!-- Permissions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Your location is needed to verify you are within company premises for attendance check-in and check-out.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Your location is needed to verify you are within company premises for attendance check-in and check-out.</string>
     <key>NSCameraUsageDescription</key>
     <string>Required to capture receipt photos for expense claims.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Required to attach documents and receipts.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Authenticate with Face ID to secure access to HRM.</string>
-    <!-- Firebase -->
-    <key>FirebaseAppDelegateProxyEnabled</key>
-    <false/>
-    <!-- Background modes for FCM -->
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>fetch</string>
-        <string>remote-notification</string>
-    </array>
 </dict>
 </plist>

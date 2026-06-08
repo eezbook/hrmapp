@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/permissions/hrm_permissions.dart';
 import '../../../../core/services/biometric_service.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../../core/storage/hive_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/employee.dart';
@@ -20,7 +19,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
   final SecureStorage _secureStorage;
   final BiometricService _biometricService;
-  final NotificationService _notificationService;
   final DeviceInfoPlugin _deviceInfo;
 
   AuthBloc({
@@ -29,14 +27,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required AuthRepository authRepository,
     required SecureStorage secureStorage,
     required BiometricService biometricService,
-    required NotificationService notificationService,
     required DeviceInfoPlugin deviceInfo,
   })  : _loginUseCase = loginUseCase,
         _getMeUseCase = getMeUseCase,
         _authRepository = authRepository,
         _secureStorage = secureStorage,
         _biometricService = biometricService,
-        _notificationService = notificationService,
         _deviceInfo = deviceInfo,
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
@@ -44,6 +40,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<BiometricRequested>(_onBiometricRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<TokenCheckRequested>(_onTokenCheck);
+    on<SwitchCompanyRequested>(_onSwitchCompany);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -84,7 +81,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         deviceId: deviceData['device_id']!,
         deviceName: deviceData['device_name']!,
         deviceType: deviceData['device_type']!,
-        fcmToken: _notificationService.fcmToken,
       ),
     );
 
@@ -119,8 +115,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await _authRepository.logout();
+    // Clear local state immediately so the UI redirects to login without waiting
+    // for the network revocation call.
+    await _secureStorage.deleteAll();
+    await HiveStorage.employee.clear();
+    HrmPermissions.clear();
     emit(AuthUnauthenticated());
+    // Best-effort server-side token revocation.
+    try { await _authRepository.logout(); } catch (_) {}
   }
 
   Future<void> _onTokenCheck(
@@ -128,6 +130,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     add(AppStarted());
+  }
+
+  Future<void> _onSwitchCompany(
+    SwitchCompanyRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    await _authRepository.switchCompany(event.companyId);
+    final result = await _authRepository.getMe();
+    result.fold(
+      (_) => emit(AuthUnauthenticated()),
+      (employee) => emit(AuthAuthenticated(employee)),
+    );
   }
 
   Future<Map<String, String>> _getDeviceData() async {

@@ -23,3 +23,10 @@ class BiometricRequested extends AuthEvent {}
 class LogoutRequested extends AuthEvent {}
 
 class TokenCheckRequested extends AuthEvent {}
+
+class SwitchCompanyRequested extends AuthEvent {
+  final int companyId;
+  const SwitchCompanyRequested(this.companyId);
+  @override
+  List<Object?> get props => [companyId];
+}

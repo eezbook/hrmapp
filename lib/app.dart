@@ -1,5 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -8,34 +6,17 @@ import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'core/storage/hive_storage.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 
-@pragma('vm:entry-point')
-Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  try {
-    await Firebase.initializeApp();
-  } catch (_) {
-    return;
-  }
-  final box = await Hive.openBox(HiveKeys.notifications);
-  final current = box.get(HiveKeys.unreadCount, defaultValue: 0) as int;
-  await box.put(HiveKeys.unreadCount, current + 1);
-}
-
 Future<void> runHrmApp({Widget Function(Widget child)? wrapWith}) async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-  } catch (_) {}
   await Hive.initFlutter();
   HiveStorage.registerAdapters();
   await HiveStorage.openBoxes();
   await configureDependencies();
-  try {
-    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
-  } catch (_) {}
   await getIt<NotificationService>().initialize();
   final app = const HrmApp();
   runApp(wrapWith != null ? wrapWith(app) : app);
@@ -46,17 +27,20 @@ class HrmApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<AuthBloc>()..add(AppStarted()),
-      child: Builder(
-        builder: (context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ThemeCubit()),
+        BlocProvider(create: (_) => getIt<AuthBloc>()..add(AppStarted())),
+      ],
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
           final router = getIt<AppRouter>().router;
           return MaterialApp.router(
             title: 'HRM App',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
-            themeMode: ThemeMode.system,
+            themeMode: themeMode,
             routerConfig: router,
             supportedLocales: const [Locale('en'), Locale('ur')],
           );

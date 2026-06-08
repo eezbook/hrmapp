@@ -46,6 +46,10 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   List<String> _holidays = [];
   bool _loadingTypes = true;
   String? _error;
+  // True while the first tap of a range has been registered but the user
+  // hasn't confirmed end date yet. Keeps the calendar in "open range" state
+  // so a second tap can either confirm same-day or extend to a range.
+  bool _awaitingRangeEnd = false;
 
   bool get _isSingleDay =>
       _startDate != null &&
@@ -78,24 +82,39 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   }
 
   Future<void> _loadData() async {
-    try {
-      final ds = getIt<LeaveRemoteDataSource>();
-      final typesRes = await ds.getLeaveTypes();
-      final holidaysRes = await ds.getPublicHolidays();
-      final balanceRes = await ds.getBalance();
-      setState(() {
-        _leaveTypes = typesRes.data ?? [];
-        _holidays = holidaysRes.data ?? [];
-        _balances = balanceRes.data ?? [];
-        if (_leaveTypes.isNotEmpty) _selectedType = _leaveTypes.first;
-        _loadingTypes = false;
-      });
-    } catch (e) {
-      setState(() {
-        _loadingTypes = false;
-        _error = 'Failed to load leave data';
-      });
-    }
+    final ds = getIt<LeaveRemoteDataSource>();
+
+    // Run all three calls in parallel. Each handles its own error so a failure
+    // in one (e.g. no holiday calendar data) does not blank out the others.
+    List<LeaveTypeModel> types = [];
+    List<String> holidays = [];
+    List<LeaveBalanceModel> balances = [];
+
+    await Future.wait([
+      ds
+          .getLeaveTypes()
+          .then((r) => types = r.data ?? [])
+          .catchError((_) {}),
+      ds
+          .getPublicHolidays()
+          .then((r) => holidays = r.data ?? [])
+          .catchError((_) {}),
+      ds
+          .getBalance()
+          .then((r) => balances = r.data ?? [])
+          .catchError((_) {}),
+    ]);
+
+    setState(() {
+      _leaveTypes = types;
+      _holidays = holidays;
+      _balances = balances;
+      if (_leaveTypes.isNotEmpty) _selectedType = _leaveTypes.first;
+      _loadingTypes = false;
+      if (_leaveTypes.isEmpty) {
+        _error = 'No leave types found. Please contact your administrator.';
+      }
+    });
   }
 
   void _submit() {
@@ -152,7 +171,6 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                 backgroundColor: Colors.green,
               ),
             );
-            ctx.read<LeaveBloc>().add(LoadBalance());
           } else if (state is LeaveError) {
             setState(() => _error = state.failure.message);
           }
@@ -268,7 +286,9 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                             .add(const Duration(days: 365)),
                         focusedDay: _focusedDay,
                         rangeStartDay: _startDate,
-                        rangeEndDay: _endDate,
+                        // Pass null while awaiting second tap so the calendar
+                        // remains in "open range" mode and can still extend.
+                        rangeEndDay: _awaitingRangeEnd ? null : _endDate,
                         rangeSelectionMode: _isHalfDay
                             ? RangeSelectionMode.disabled
                             : RangeSelectionMode.enforced,
@@ -287,10 +307,26 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                             ? null
                             : (start, end, focused) {
                                 setState(() {
-                                  _startDate = start;
-                                  _endDate = end;
                                   _focusedDay = focused;
                                   _dayType = 0;
+                                  if (end == null) {
+                                    // First tap: immediately treat as single-day
+                                    // selection. Keep _awaitingRangeEnd = true so
+                                    // the calendar stays open for a second tap that
+                                    // can extend into a multi-day range.
+                                    _startDate = start;
+                                    _endDate = start;
+                                    _awaitingRangeEnd = true;
+                                  } else {
+                                    // Second tap: range or same-day confirmed.
+                                    _startDate = start;
+                                    _endDate = end;
+                                    _awaitingRangeEnd = false;
+                                    // Half-day only valid for a single day.
+                                    if (!isSameDay(start, end)) {
+                                      _dayType = 0;
+                                    }
+                                  }
                                 });
                               },
                         onDaySelected: _isHalfDay
@@ -385,8 +421,10 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                             ButtonSegment(value: 2, label: Text('2nd Half')),
                           ],
                           selected: {_dayType},
-                          onSelectionChanged: (s) =>
-                              setState(() => _dayType = s.first),
+                          onSelectionChanged: (s) => setState(() {
+                            _dayType = s.first;
+                            _awaitingRangeEnd = false;
+                          }),
                         ),
                         const SizedBox(height: AppSpacing.md),
                       ],

@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../storage/hive_storage.dart';
 
@@ -6,18 +5,10 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'hrm_channel';
+  static const _channelId   = 'hrm_channel';
   static const _channelName = 'HRM Notifications';
 
-  String? _fcmToken;
-  String? get fcmToken => _fcmToken;
-
   Future<void> initialize() async {
-    await _setupLocalNotifications();
-    await _setupFcm();
-  }
-
-  Future<void> _setupLocalNotifications() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -41,30 +32,17 @@ class NotificationService {
         );
   }
 
-  Future<void> _setupFcm() async {
-    try {
-      await FirebaseMessaging.instance.requestPermission();
-      _fcmToken = await FirebaseMessaging.instance.getToken();
-      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-        _fcmToken = token;
-      });
-      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
-    } catch (_) {
-      // Firebase not configured — push notifications disabled
-    }
-  }
-
-  Future<void> _onForegroundMessage(RemoteMessage message) async {
-    final notification = message.notification;
-    if (notification == null) return;
-
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
     await _localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
+      title.hashCode,
+      title,
+      body,
       NotificationDetails(
-        android: AndroidNotificationDetails(
+        android: const AndroidNotificationDetails(
           _channelId,
           _channelName,
           importance: Importance.high,
@@ -72,20 +50,13 @@ class NotificationService {
         ),
         iOS: const DarwinNotificationDetails(),
       ),
-      payload: message.data['route'] as String?,
+      payload: payload,
     );
 
     final current =
         HiveStorage.notificationsBox.get(HiveKeys.unreadCount, defaultValue: 0)
             as int;
     await HiveStorage.notificationsBox.put(HiveKeys.unreadCount, current + 1);
-  }
-
-  void _onMessageOpenedApp(RemoteMessage message) {
-    final route = message.data['route'] as String?;
-    if (route != null) {
-      _pendingRoute = route;
-    }
   }
 
   void _onNotificationTap(NotificationResponse response) {
@@ -97,7 +68,7 @@ class NotificationService {
   String? _pendingRoute;
 
   String? consumePendingRoute() {
-    final route = _pendingRoute;
+    final route   = _pendingRoute;
     _pendingRoute = null;
     return route;
   }

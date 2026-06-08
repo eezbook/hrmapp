@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../../data/models/company_model.dart';
 import '../entities/employee.dart';
 
 abstract class AuthRepository {
@@ -9,7 +10,6 @@ abstract class AuthRepository {
     required String deviceId,
     required String deviceName,
     required String deviceType,
-    String? fcmToken,
   });
 
   Future<Either<Failure, Employee>> getMe();
@@ -31,4 +31,8 @@ abstract class AuthRepository {
   });
 
   Future<Either<Failure, void>> updateDeviceToken(String token);
+
+  Future<Either<Failure, List<CompanyModel>>> getCompanies();
+
+  Future<void> switchCompany(int companyId);
 }

@@ -14,10 +14,15 @@ import '../../features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/leave/presentation/bloc/leave_bloc.dart';
+import '../../features/leave/presentation/cubit/leave_balance_cubit.dart';
+import '../../features/leave/presentation/cubit/leave_requests_cubit.dart';
+import '../../features/leave/presentation/cubit/leave_approvals_cubit.dart';
 import '../../features/leave/presentation/pages/apply_leave_page.dart';
 import '../../features/leave/presentation/pages/leave_home_page.dart';
 import '../../features/leave/presentation/pages/leave_request_detail_page.dart';
 import '../../features/leave/presentation/pages/team_calendar_page.dart';
+import '../../features/attendance/presentation/cubit/attendance_cubit.dart';
+import '../../features/attendance/presentation/pages/attendance_home_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/overtime/presentation/cubit/overtime_cubit.dart';
 import '../../features/overtime/presentation/pages/overtime_apply_page.dart';
@@ -112,8 +117,12 @@ class AppRouter {
             GoRoute(
               path: '/leave',
               name: RouteNames.leave,
-              builder: (context, state) => BlocProvider(
-                create: (_) => getIt<LeaveBloc>(),
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (_) => getIt<LeaveBalanceCubit>()),
+                  BlocProvider(create: (_) => getIt<LeaveRequestsCubit>()),
+                  BlocProvider(create: (_) => getIt<LeaveApprovalsCubit>()),
+                ],
                 child: const LeaveHomePage(),
               ),
               routes: [
@@ -144,9 +153,13 @@ class AppRouter {
                     }
                     return null;
                   },
-                  builder: (context, state) => BlocProvider(
-                    create: (_) => getIt<LeaveBloc>(),
-                    child: const LeaveHomePage(),
+                  builder: (context, state) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => getIt<LeaveBalanceCubit>()),
+                      BlocProvider(create: (_) => getIt<LeaveRequestsCubit>()),
+                      BlocProvider(create: (_) => getIt<LeaveApprovalsCubit>()),
+                    ],
+                    child: const LeaveHomePage(initialTab: 2),
                   ),
                 ),
                 GoRoute(
@@ -319,6 +332,14 @@ class AppRouter {
               ],
             ),
             GoRoute(
+              path: '/attendance',
+              name: RouteNames.attendance,
+              builder: (context, state) => BlocProvider(
+                create: (_) => getIt<AttendanceCubit>(),
+                child: const AttendanceHomePage(),
+              ),
+            ),
+            GoRoute(
               path: '/notifications',
               name: RouteNames.notifications,
               builder: (_, __) => const NotificationsPage(),
@@ -344,36 +365,49 @@ class _ScaffoldWithNav extends StatefulWidget {
 }
 
 class _ScaffoldWithNavState extends State<_ScaffoldWithNav> {
-  int _currentIndex = 0;
+  static const _navy   = Color(0xFF1B2064);
+  static const _purple = Color(0xFF7367F0);
 
   List<_NavItem> get _items {
     return [
-      _NavItem(
-        icon: Icons.home_rounded,
+      const _NavItem(
+        icon:       Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
         label: 'Home',
         route: '/dashboard',
         show: true,
       ),
       _NavItem(
-        icon: Icons.beach_access_rounded,
+        icon:       Icons.event_note_outlined,
+        activeIcon: Icons.event_note_rounded,
         label: 'Leave',
         route: '/leave',
         show: HrmPermissions.canApplyLeave,
       ),
       _NavItem(
-        icon: Icons.flight_rounded,
+        icon:       Icons.flight_takeoff_outlined,
+        activeIcon: Icons.flight_takeoff_rounded,
         label: 'Travel',
         route: '/travel',
         show: HrmPermissions.canApplyTravel,
       ),
       _NavItem(
-        icon: Icons.school_rounded,
+        icon:       Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book_rounded,
         label: 'Training',
         route: '/training',
         show: HrmPermissions.canEnrollTraining,
       ),
       _NavItem(
-        icon: Icons.more_horiz_rounded,
+        icon:       Icons.access_time_outlined,
+        activeIcon: Icons.access_time_filled_rounded,
+        label: 'Attendance',
+        route: '/attendance',
+        show: HrmPermissions.canViewAttendance,
+      ),
+      const _NavItem(
+        icon:       Icons.grid_view_outlined,
+        activeIcon: Icons.grid_view_rounded,
         label: 'More',
         route: '/profile',
         show: true,
@@ -381,21 +415,136 @@ class _ScaffoldWithNavState extends State<_ScaffoldWithNav> {
     ].where((i) => i.show).toList();
   }
 
+  int _indexFromLocation(String location, List<_NavItem> items) {
+    for (int i = 0; i < items.length; i++) {
+      if (location.startsWith(items[i].route)) return i;
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final items = _items;
-    return Scaffold(
-      body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex.clamp(0, items.length - 1),
-        onTap: (i) {
-          setState(() => _currentIndex = i);
-          context.go(items[i].route);
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          context.go('/dashboard');
+        }
+      },
+      child: Builder(
+        builder: (context) {
+          final items = _items;
+          final location = GoRouterState.of(context).matchedLocation;
+          final currentIndex = _indexFromLocation(location, items);
+          return Scaffold(
+            body: widget.child,
+            bottomNavigationBar: _CustomNavBar(
+              items: items,
+              currentIndex: currentIndex,
+              onTap: (i) => context.go(items[i].route),
+            ),
+          );
         },
-        items: items.map((item) => BottomNavigationBarItem(
-          icon: Icon(item.icon),
-          label: item.label,
-        )).toList(),
+      ),
+    );
+  }
+}
+
+class _CustomNavBar extends StatelessWidget {
+  final List<_NavItem> items;
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  static const _navy   = Color(0xFF1B2064);
+  static const _purple = Color(0xFF7367F0);
+
+  const _CustomNavBar({
+    required this.items,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _navy,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 20,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            children: items.asMap().entries.map((e) {
+              final i = e.key;
+              final item = e.value;
+              final selected = i == currentIndex;
+
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(i),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Icon with animated pill background
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? _purple.withOpacity(0.22)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          selected ? item.activeIcon : item.icon,
+                          color: selected ? Colors.white : Colors.white38,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      // Label
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          color: selected ? Colors.white : Colors.white38,
+                          fontSize: 10,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          letterSpacing: 0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      // Active dot indicator
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        width: selected ? 16 : 0,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: _purple,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -403,12 +552,14 @@ class _ScaffoldWithNavState extends State<_ScaffoldWithNav> {
 
 class _NavItem {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
   final String route;
   final bool show;
 
   const _NavItem({
     required this.icon,
+    required this.activeIcon,
     required this.label,
     required this.route,
     required this.show,

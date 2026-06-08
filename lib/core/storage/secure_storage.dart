@@ -7,6 +7,7 @@ abstract class SecureKeys {
   static const employeeRole = 'employee_role';
   static const storedEmail = 'stored_email';
   static const storedPassword = 'stored_password';
+  static const selectedCompanyId = 'selected_company_id';
 }
 
 class SecureStorage {

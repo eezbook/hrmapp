@@ -32,7 +32,7 @@ _LeaveRequestModel _$LeaveRequestModelFromJson(Map<String, dynamic> json) =>
       endDate: json['endDate'] as String,
       days: (json['days'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String,
-      reason: json['reason'] as String,
+      reason: json['reason'] as String? ?? '',
       documentUrl: json['documentUrl'] as String?,
       cancelledAt: json['cancelledAt'] as String?,
       createdAt: json['createdAt'] as String?,

@@ -16,6 +16,8 @@ abstract class EmployeeModel with _$EmployeeModel {
     String? phone,
     String? role,
     String? joinDate,
+    String? companyName,
+    List<String>? hrmPermissions,
   }) = _EmployeeModel;
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) =>

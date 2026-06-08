@@ -16,6 +16,10 @@ class AuthInterceptor extends Interceptor {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
+    final companyId = await _secureStorage.read(SecureKeys.selectedCompanyId);
+    if (companyId != null) {
+      options.headers['X-HRM-Company-ID'] = companyId;
+    }
     options.headers['X-Device-ID'] = _deviceId;
     options.headers['Accept'] = 'application/json';
     options.headers['Content-Type'] = 'application/json';

@@ -9,15 +9,12 @@ class LoginParams {
   final String deviceId;
   final String deviceName;
   final String deviceType;
-  final String? fcmToken;
-
   const LoginParams({
     required this.email,
     required this.password,
     required this.deviceId,
     required this.deviceName,
     required this.deviceType,
-    this.fcmToken,
   });
 }
 
@@ -33,7 +30,6 @@ class LoginUseCase {
       deviceId: params.deviceId,
       deviceName: params.deviceName,
       deviceType: params.deviceType,
-      fcmToken: params.fcmToken,
     );
   }
 }
