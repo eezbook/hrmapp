@@ -4,11 +4,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
 import '../api/dio_client.dart';
+import '../database/app_database.dart';
 import '../network/network_info.dart';
 import '../router/app_router.dart';
 import '../services/biometric_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/notification_service.dart';
 import '../storage/secure_storage.dart';
+import '../sync/sync_queue_service.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -72,6 +75,12 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<BiometricService>(BiometricService());
   getIt.registerSingleton<NotificationService>(NotificationService());
   getIt.registerSingleton<LocationService>(LocationService());
+
+  // Offline sync — order matters: AppDatabase → SyncQueueService → ConnectivityService
+  final db = await AppDatabase.getInstance();
+  getIt.registerSingleton<AppDatabase>(db);
+  getIt.registerSingleton<SyncQueueService>(SyncQueueService());
+  getIt.registerSingleton<ConnectivityService>(ConnectivityService());
 
   // Remote DataSources
   getIt.registerLazySingleton<AuthRemoteDataSource>(

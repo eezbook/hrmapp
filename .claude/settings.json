@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\wamp64\\\\www\\\\clouderp\\\\database\\\\migrations\" -Name | Where-Object { $_ -match \"branch\" -or $_ -match \"employee\" } | Sort-Object)",
+      "PowerShell(Get-ChildItem \"C:\\\\wamp64\\\\www\\\\clouderp\\\\app\\\\Http\\\\Controllers\\\\settings\" -Recurse -Name | Where-Object { $_ -match \"branch\" -or $_ -match \"employee\" })",
+      "Read(//c/wamp64/www/clouderp/app/Http/Controllers/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\wamp64\\www\\clouderp\\database\\migrations",
+      "C:\\wamp64\\www\\clouderp\\app\\Models\\settings\\system_setup\\branches",
+      "C:\\wamp64\\www\\clouderp\\app\\Models\\settings\\company_master",
+      "C:\\wamp64\\www\\clouderp\\app\\Http\\Controllers\\settings\\system_setup\\branches",
+      "C:\\wamp64\\www\\clouderp\\routes",
+      "C:\\wamp64\\www\\clouderp\\resources\\views\\settings\\system_setup\\branches",
+      "C:\\wamp64\\www\\clouderp\\resources\\assets\\js\\settings_js\\system_setup\\branches",
+      "C:\\wamp64\\www\\clouderp\\resources\\views\\settings\\company_master\\employee\\employees_detail",
+      "C:\\wamp64\\www\\clouderp\\resources\\assets\\js\\settings_js\\company_master\\employee",
+      "C:\\wamp64\\www\\clouderp\\app\\Http\\Controllers\\settings\\company_master"
+    ]
+  }
+}

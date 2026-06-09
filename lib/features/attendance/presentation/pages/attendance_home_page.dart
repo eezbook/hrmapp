@@ -68,6 +68,16 @@ class _AttendanceHomePageState extends State<AttendanceHomePage> {
           Expanded(
             child: BlocConsumer<AttendanceCubit, AttendanceState>(
               listener: (context, state) {
+                if (state is AttendanceOfflineQueued) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.amber.shade700,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
                 if (state is! AttendanceLoaded) return;
                 if (state.punchStatus == PunchStatus.success) {
                   final today = state.todayRecord;

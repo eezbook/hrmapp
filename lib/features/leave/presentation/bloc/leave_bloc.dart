@@ -1,4 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/connectivity_service.dart';
+import '../../../../core/sync/sync_queue_service.dart';
 import '../../domain/repositories/leave_repository.dart';
 import 'leave_event.dart';
 import 'leave_state.dart';
@@ -81,6 +84,15 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     ApplyLeave event,
     Emitter<LeaveState> emit,
   ) async {
+    final isOnline = await getIt<ConnectivityService>().isOnline();
+    if (!isOnline) {
+      await getIt<SyncQueueService>().addToQueue('leave_apply', event.params);
+      emit(const LeaveApplyOfflineQueued(
+        message: 'Leave request saved offline. Will sync when connected.',
+      ));
+      return;
+    }
+
     emit(LeaveLoading());
     final result = await _repository.applyLeave(event.params);
     result.fold(

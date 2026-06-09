@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/error/error_handler.dart';
+import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/sync/sync_queue_service.dart';
 import '../../data/datasources/attendance_remote_datasource.dart';
 import '../../data/models/attendance_record_model.dart';
 import '../../data/models/attendance_summary_model.dart';
@@ -80,6 +83,13 @@ class AttendanceError extends AttendanceState {
   List<Object?> get props => [message];
 }
 
+class AttendanceOfflineQueued extends AttendanceState {
+  final String message;
+  const AttendanceOfflineQueued({required this.message});
+  @override
+  List<Object?> get props => [message];
+}
+
 // ── Cubit ─────────────────────────────────────────────────────────────────────
 
 class AttendanceCubit extends Cubit<AttendanceState> {
@@ -146,6 +156,38 @@ class AttendanceCubit extends Cubit<AttendanceState> {
   Future<void> _punch({required bool isCheckIn}) async {
     final current = state;
     if (current is! AttendanceLoaded) return;
+
+    // Check connectivity before any API call
+    final isOnline = await getIt<ConnectivityService>().isOnline();
+    if (!isOnline) {
+      double? lat;
+      double? lon;
+      try {
+        final position = await _location.getCurrentPosition();
+        lat = position.latitude;
+        lon = position.longitude;
+      } catch (_) {}
+
+      await getIt<SyncQueueService>().addToQueue(
+        isCheckIn ? 'attendance_checkin' : 'attendance_checkout',
+        {
+          'latitude': lat,
+          'longitude': lon,
+          // location_type cannot be determined offline (requires fetching configured
+          // locations from server). Server should validate against coordinates on sync.
+          'location_type': null,
+        },
+      );
+
+      emit(AttendanceOfflineQueued(
+        message: isCheckIn
+            ? 'Check-in saved offline. Will sync when connected.'
+            : 'Check-out saved offline. Will sync when connected.',
+      ));
+      // Restore the loaded state so the UI doesn't blank out
+      emit(current.copyWith(punchStatus: PunchStatus.idle, punchError: null));
+      return;
+    }
 
     emit(current.copyWith(punchStatus: PunchStatus.loading, punchError: null));
 
