@@ -38,8 +38,9 @@ class _AddTrainingRequestPageState extends State<AddTrainingRequestPage> {
   String? _trainingType;
 
   int get _totalDays {
-    if (_dateFrom == null || _dateTo == null) return 0;
-    return _dateTo!.difference(_dateFrom!).inDays + 1;
+    if (_dateFrom == null) return 0;
+    final end = _dateTo ?? _dateFrom!;
+    return end.difference(_dateFrom!).inDays + 1;
   }
 
   @override
@@ -53,20 +54,22 @@ class _AddTrainingRequestPageState extends State<AddTrainingRequestPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    if (_dateFrom == null || _dateTo == null) {
-      setState(() => _error = 'Please select training dates');
+    if (_dateFrom == null) {
+      setState(() => _error = 'Please select training start date');
       return;
     }
 
+    final effectiveTo = _dateTo ?? _dateFrom!;
+
     context.read<TrainingBloc>().add(
           SubmitTrainingRequest({
-            'training_type':     _trainingType ?? '',
-            'training_title':    _titleCtrl.text.trim(),
-            'training_location': _locationCtrl.text.trim(),
+            'training_type':      _trainingType ?? '',
+            'training_title':     _titleCtrl.text.trim(),
+            'training_location':  _locationCtrl.text.trim(),
             'advance_amount':
                 double.tryParse(_advanceAmtCtrl.text) ?? 0,
             'training_date_from': HrmDateUtils.formatApi(_dateFrom!),
-            'training_date_to':   HrmDateUtils.formatApi(_dateTo!),
+            'training_date_to':   HrmDateUtils.formatApi(effectiveTo),
             'total_days':         _totalDays,
             'main_narration':     _narrationCtrl.text.trim(),
             'approval_status':    _approvalStatus,
@@ -225,7 +228,7 @@ class _AddTrainingRequestPageState extends State<AddTrainingRequestPage> {
                 ),
 
                 // ── Total Training Days (read-only) ───────────────
-                if (_dateFrom != null && _dateTo != null) ...[
+                if (_dateFrom != null) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -237,7 +240,12 @@ class _AddTrainingRequestPageState extends State<AddTrainingRequestPage> {
                       children: [
                         Expanded(
                           child: Text(
-                            '${HrmDateUtils.formatDisplay(_dateFrom!)} – ${HrmDateUtils.formatDisplay(_dateTo!)}',
+                            () {
+                              final end = _dateTo ?? _dateFrom!;
+                              final start = HrmDateUtils.formatDisplay(_dateFrom!);
+                              final endStr = HrmDateUtils.formatDisplay(end);
+                              return start == endStr ? start : '$start – $endStr';
+                            }(),
                             style: AppTextStyles.bodySmall.copyWith(
                               color: scheme.onPrimaryContainer,
                             ),

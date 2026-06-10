@@ -47,6 +47,18 @@ class TravelRequestCreated extends TravelState {
   const TravelRequestCreated(this.request);
 }
 
+class TravelRequestDetailLoaded extends TravelState {
+  final TravelRequest request;
+  const TravelRequestDetailLoaded(this.request);
+  @override
+  List<Object?> get props => [request];
+}
+class ExpenseClaimDetailLoaded extends TravelState {
+  final ExpenseClaim claim;
+  const ExpenseClaimDetailLoaded(this.claim);
+  @override
+  List<Object?> get props => [claim];
+}
 class ExpenseSubmitted extends TravelState {}
 class TravelActionSuccess extends TravelState {}
 class TravelError extends TravelState {

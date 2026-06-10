@@ -60,12 +60,11 @@ class AppDatabase {
     );
   }
 
-  /// Marks a row as synced. Rows are never deleted — this preserves the audit trail.
-  Future<void> markSynced(String id) async {
+  /// Deletes a synced row from the queue.
+  Future<void> deleteRow(String id) async {
     final db = await database;
-    await db.update(
+    await db.delete(
       'pending_sync_queue',
-      {'synced_at': DateTime.now().toIso8601String()},
       where: 'id = ?',
       whereArgs: [id],
     );

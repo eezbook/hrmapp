@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
 import '../api/dio_client.dart';
+import '../cubit/hrm_header_cubit.dart';
 import '../database/app_database.dart';
 import '../network/network_info.dart';
 import '../router/app_router.dart';
@@ -81,6 +82,9 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<AppDatabase>(db);
   getIt.registerSingleton<SyncQueueService>(SyncQueueService());
   getIt.registerSingleton<ConnectivityService>(ConnectivityService());
+  // Singleton shell-header cubit: owns the one connectivity subscription for
+  // the entire app and lets each shell page set its subtitle / bottom widget.
+  getIt.registerSingleton<HrmHeaderCubit>(HrmHeaderCubit());
 
   // Remote DataSources
   getIt.registerLazySingleton<AuthRemoteDataSource>(
@@ -168,6 +172,8 @@ Future<void> configureDependencies() async {
     () => AttendanceCubit(
       getIt<AttendanceRemoteDataSource>(),
       getIt<LocationService>(),
+      getIt<TravelRepository>(),
+      getIt<LeaveRepository>(),
     ),
   );
   getIt.registerFactory<OvertimeCubit>(

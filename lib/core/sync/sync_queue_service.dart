@@ -23,8 +23,11 @@ class SyncQueueService {
     });
   }
 
-  Future<void> processPendingQueue() async {
+  /// Processes all pending offline actions. Returns the number of items
+  /// successfully synced and deleted from the local queue.
+  Future<int> processPendingQueue() async {
     final rows = await GetIt.instance<AppDatabase>().getPendingActions();
+    int synced = 0;
     for (final row in rows) {
       final id = row['id'] as String;
       final action = row['action'] as String;
@@ -32,12 +35,14 @@ class SyncQueueService {
           jsonDecode(row['payload'] as String) as Map<String, dynamic>;
       try {
         await _dispatchAction(action, payload);
-        await GetIt.instance<AppDatabase>().markSynced(id);
+        await GetIt.instance<AppDatabase>().deleteRow(id);
+        synced++;
       } catch (e) {
         await GetIt.instance<AppDatabase>().incrementRetry(id, e.toString());
         debugPrint('[SyncQueue] Failed to sync $id: $e');
       }
     }
+    return synced;
   }
 
   Future<void> _dispatchAction(

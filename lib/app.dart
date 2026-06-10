@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -24,8 +26,44 @@ Future<void> runHrmApp({Widget Function(Widget child)? wrapWith}) async {
   runApp(wrapWith != null ? wrapWith(app) : app);
 }
 
-class HrmApp extends StatelessWidget {
+class HrmApp extends StatefulWidget {
   const HrmApp({super.key});
+
+  @override
+  State<HrmApp> createState() => _HrmAppState();
+}
+
+class _HrmAppState extends State<HrmApp> {
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  late final StreamSubscription<String> _syncSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncSub = getIt<ConnectivityService>().syncMessages.listen((message) {
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cloud_done_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncSub.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +78,7 @@ class HrmApp extends StatelessWidget {
           return MaterialApp.router(
             title: 'HRM App',
             debugShowCheckedModeBanner: false,
+            scaffoldMessengerKey: _messengerKey,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: themeMode,

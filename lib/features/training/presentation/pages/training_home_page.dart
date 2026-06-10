@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/config/route_names.dart';
+import '../../../../core/cubit/hrm_header_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/feature_header.dart';
 import '../../../../core/widgets/shimmer_loader.dart';
 import '../bloc/training_bloc.dart';
 import '../bloc/training_event.dart';
 import '../bloc/training_state.dart';
+
+const _purple = Color(0xFF7367F0);
 
 class TrainingHomePage extends StatefulWidget {
   const TrainingHomePage({super.key});
@@ -23,14 +27,37 @@ class TrainingHomePage extends StatefulWidget {
 class _TrainingHomePageState extends State<TrainingHomePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _selectedTab = 0;
   String? _selectedCategory;
-  String _search = '';
+
+  static const _tabs = ['Library', 'My Learning', 'Certificates'];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      setState(() => _selectedTab = _tabController.index);
+      _updateHeader(_tabController.index);
+    });
     context.read<TrainingBloc>().add(const LoadCourses());
+    _updateHeader(0);
+  }
+
+  void _updateHeader(int tab) {
+    getIt<HrmHeaderCubit>().update(
+      subtitle: 'Grow your skills',
+      bottom: FeatureTabSwitcher(
+        labels: _tabs,
+        selectedIndex: tab,
+        onChanged: (i) {
+          setState(() => _selectedTab = i);
+          _tabController.animateTo(i);
+          _updateHeader(i);
+        },
+      ),
+    );
   }
 
   @override
@@ -41,46 +68,38 @@ class _TrainingHomePageState extends State<TrainingHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Training',
+    return Scaffold(
+      backgroundColor: featurePageBg,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed(RouteNames.trainingRequest),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Request'),
+        backgroundColor: _purple,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text(
+          'Add Request',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Library'),
-              Tab(text: 'My Learning'),
-              Tab(text: 'Certificates'),
-            ],
+          _LibraryTab(
+            selectedCategory: _selectedCategory,
+            onCategoryChanged: (c) {
+              setState(() => _selectedCategory = c);
+              context.read<TrainingBloc>().add(LoadCourses(category: c));
+            },
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _LibraryTab(
-                  selectedCategory: _selectedCategory,
-                  onCategoryChanged: (c) {
-                    setState(() => _selectedCategory = c);
-                    context.read<TrainingBloc>().add(
-                          LoadCourses(category: c, search: _search),
-                        );
-                  },
-                ),
-                _MyLearningTab(),
-                _CertificatesTab(),
-              ],
-            ),
-          ),
+          const _MyLearningTab(),
+          const _CertificatesTab(),
         ],
       ),
     );
   }
 }
+
+// ── Library Tab ───────────────────────────────────────────────────────────────
 
 class _LibraryTab extends StatelessWidget {
   final String? selectedCategory;
@@ -106,12 +125,11 @@ class _LibraryTab extends StatelessWidget {
         if (state is CoursesLoaded) {
           return Column(
             children: [
-              // Category chips
               if (state.categories.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                      horizontal: 12, vertical: 10),
                   child: Row(
                     children: [
                       Padding(
@@ -174,8 +192,19 @@ class _CourseCard extends StatelessWidget {
         RouteNames.courseDetail,
         pathParameters: {'courseId': course.id.toString()},
       ),
-      borderRadius: BorderRadius.circular(12),
-      child: Card(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,8 +218,8 @@ class _CourseCard extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: course.thumbnailUrl!,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                              color: scheme.primaryContainer),
+                          placeholder: (_, __) =>
+                              Container(color: scheme.primaryContainer),
                           errorWidget: (_, __, ___) => Container(
                               color: scheme.primaryContainer,
                               child: Icon(Icons.school,
@@ -227,7 +256,7 @@ class _CourseCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -239,11 +268,29 @@ class _CourseCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (course.myProgress != null &&
-                        (course.myProgress as double) > 0)
-                      LinearProgressIndicator(
-                        value: (course.myProgress as double) / 100,
-                        borderRadius: BorderRadius.circular(4),
+                        (course.myProgress as double) > 0) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: (course.myProgress as double) / 100,
+                                minHeight: 5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${(course.myProgress as double).toStringAsFixed(0)}%',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: _purple,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -255,7 +302,11 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
+// ── My Learning Tab ───────────────────────────────────────────────────────────
+
 class _MyLearningTab extends StatelessWidget {
+  const _MyLearningTab();
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TrainingBloc, TrainingState>(
@@ -274,13 +325,13 @@ class _MyLearningTab extends StatelessWidget {
             children: [
               if (state.inProgress.isNotEmpty) ...[
                 Text('In Progress', style: AppTextStyles.titleSmall),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 ...state.inProgress.map((c) => _LearningCard(course: c)),
               ],
               if (state.completed.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Text('Completed', style: AppTextStyles.titleSmall),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 ...state.completed.map((c) => _LearningCard(course: c)),
               ],
             ],
@@ -304,29 +355,50 @@ class _LearningCard extends StatelessWidget {
         RouteNames.courseDetail,
         pathParameters: {'courseId': course.id.toString()},
       ),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           leading: Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
               color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(Icons.school, color: scheme.onPrimaryContainer),
           ),
-          title: Text(course.title),
+          title: Text(course.title,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: course.myProgress != null
-              ? LinearProgressIndicator(
-                  value: (course.myProgress as double) / 100,
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (course.myProgress as double) / 100,
+                      minHeight: 5,
+                    ),
+                  ),
                 )
               : null,
           trailing: Text(
             '${(course.myProgress ?? 0).toStringAsFixed(0)}%',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: scheme.primary,
-            ),
+            style: AppTextStyles.labelSmall
+                .copyWith(color: _purple, fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -334,7 +406,11 @@ class _LearningCard extends StatelessWidget {
   }
 }
 
+// ── Certificates Tab ──────────────────────────────────────────────────────────
+
 class _CertificatesTab extends StatelessWidget {
+  const _CertificatesTab();
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TrainingBloc, TrainingState>(
@@ -361,8 +437,7 @@ class _CertificatesTab extends StatelessWidget {
               final expiresSoon = expiry != null &&
                   expiry.difference(now).inDays <= 30 &&
                   expiry.isAfter(now);
-              final isExpired =
-                  expiry != null && expiry.isBefore(now);
+              final isExpired = expiry != null && expiry.isBefore(now);
 
               return InkWell(
                 onTap: () => context.goNamed(
@@ -370,14 +445,25 @@ class _CertificatesTab extends StatelessWidget {
                   pathParameters: {'id': cert.id.toString()},
                 ),
                 borderRadius: BorderRadius.circular(12),
-                child: Card(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: ListTile(
-                    leading: const Icon(
-                        Icons.workspace_premium_rounded,
-                        color: Colors.amber),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    leading: const Icon(Icons.workspace_premium_rounded,
+                        color: Colors.amber, size: 32),
                     title: Text(cert.courseName),
-                    subtitle: Text(
-                        'Issued: ${cert.issuedDate}'),
+                    subtitle: Text('Issued: ${cert.issuedDate}'),
                     trailing: expiry != null
                         ? Container(
                             padding: const EdgeInsets.symmetric(
@@ -394,7 +480,7 @@ class _CertificatesTab extends StatelessWidget {
                               isExpired
                                   ? 'Expired'
                                   : expiresSoon
-                                      ? 'Expiring Soon'
+                                      ? 'Expiring'
                                       : 'Valid',
                               style: AppTextStyles.labelSmall.copyWith(
                                 color: isExpired
@@ -402,6 +488,7 @@ class _CertificatesTab extends StatelessWidget {
                                     : expiresSoon
                                         ? AppColors.pending
                                         : AppColors.approved,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           )

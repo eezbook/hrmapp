@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/cubit/hrm_header_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/storage/hive_storage.dart';
 import '../../../../core/widgets/avatar_widget.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
@@ -27,6 +29,10 @@ class _ProfilePageState extends State<ProfilePage> {
           HiveKeys.biometricEnabled,
           defaultValue: false,
         ) as bool;
+    getIt<HrmHeaderCubit>().update(
+      subtitle: 'More & Settings',
+      clearBottom: true,
+    );
   }
 
   Future<void> _toggleBiometric(bool value) async {
@@ -60,108 +66,57 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: _pageBg,
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 48),
         children: [
-          _MoreHeader(name: name),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 48),
-              children: [
-                _ProfileCard(
-                  name: name,
-                  designation: designation,
-                  department: department,
-                  empCode: empCode,
-                  photo: photo,
-                ),
-                const SizedBox(height: 24),
-                _SectionLabel('Account'),
-                const SizedBox(height: 8),
-                _MenuCard(children: [
-                  _MenuItem(
-                    icon: Icons.email_outlined,
-                    iconColor: _purple,
-                    title: 'Email Address',
-                    subtitle: email.isNotEmpty ? email : '—',
-                  ),
-                  _Divider(),
-                  _MenuItem(
-                    icon: Icons.badge_outlined,
-                    iconColor: const Color(0xFF0EA5E9),
-                    title: 'Employee Code',
-                    subtitle: empCode.isNotEmpty ? '#$empCode' : '—',
-                  ),
-                ]),
-                const SizedBox(height: 20),
-                _SectionLabel('Security'),
-                const SizedBox(height: 8),
-                _MenuCard(children: [
-                  _BiometricTile(
-                    value: _biometricEnabled,
-                    onChanged: _toggleBiometric,
-                  ),
-                ]),
-                const SizedBox(height: 20),
-                _SectionLabel('Session'),
-                const SizedBox(height: 8),
-                _MenuCard(children: [
-                  _MenuItem(
-                    icon: Icons.logout_rounded,
-                    iconColor: Colors.redAccent,
-                    title: 'Sign Out',
-                    titleColor: Colors.redAccent,
-                    showChevron: false,
-                    onTap: _logout,
-                  ),
-                ]),
-              ],
+          _ProfileCard(
+            name: name,
+            designation: designation,
+            department: department,
+            empCode: empCode,
+            photo: photo,
+          ),
+          const SizedBox(height: 24),
+          _SectionLabel('Account'),
+          const SizedBox(height: 8),
+          _MenuCard(children: [
+            _MenuItem(
+              icon: Icons.email_outlined,
+              iconColor: _purple,
+              title: 'Email Address',
+              subtitle: email.isNotEmpty ? email : '—',
             ),
-          ),
+            _Divider(),
+            _MenuItem(
+              icon: Icons.badge_outlined,
+              iconColor: const Color(0xFF0EA5E9),
+              title: 'Employee Code',
+              subtitle: empCode.isNotEmpty ? '#$empCode' : '—',
+            ),
+          ]),
+          const SizedBox(height: 20),
+          _SectionLabel('Security'),
+          const SizedBox(height: 8),
+          _MenuCard(children: [
+            _BiometricTile(
+              value: _biometricEnabled,
+              onChanged: _toggleBiometric,
+            ),
+          ]),
+          const SizedBox(height: 20),
+          _SectionLabel('Session'),
+          const SizedBox(height: 8),
+          _MenuCard(children: [
+            _MenuItem(
+              icon: Icons.logout_rounded,
+              iconColor: Colors.redAccent,
+              title: 'Sign Out',
+              titleColor: Colors.redAccent,
+              showChevron: false,
+              onTap: _logout,
+            ),
+          ]),
         ],
-      ),
-    );
-  }
-}
-
-// ── Header ────────────────────────────────────────────────────────────────────
-
-class _MoreHeader extends StatelessWidget {
-  final String name;
-  const _MoreHeader({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: _navy,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
-          child: Row(
-            children: [
-              const Text(
-                'More',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.settings_outlined,
-                    color: Colors.white, size: 20),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -200,7 +155,6 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Navy top band
           Container(
             height: 64,
             decoration: const BoxDecoration(
@@ -208,7 +162,6 @@ class _ProfileCard extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
           ),
-          // Avatar overlapping the band
           Transform.translate(
             offset: const Offset(0, -36),
             child: Container(
@@ -230,7 +183,6 @@ class _ProfileCard extends StatelessWidget {
               ),
             ),
           ),
-          // Info below avatar
           Transform.translate(
             offset: const Offset(0, -28),
             child: Padding(

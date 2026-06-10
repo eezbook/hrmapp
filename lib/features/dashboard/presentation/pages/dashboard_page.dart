@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/config/route_names.dart';
+import '../../../../core/cubit/hrm_header_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/permissions/hrm_permissions.dart';
-import '../../../../core/storage/hive_storage.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/shimmer_loader.dart';
 import '../../../../core/widgets/error_view.dart';
-import '../../../auth/data/datasources/auth_remote_datasource.dart';
-import '../../../auth/data/models/company_model.dart';
+import '../../../attendance/data/datasources/attendance_remote_datasource.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../data/models/dashboard_data_model.dart';
 import '../cubit/dashboard_cubit.dart';
 
-const _navy = Color(0xFF1B2064);
+const _navy   = Color(0xFF1B2064);
 const _purple = Color(0xFF7367F0);
 const _pageBg = Color(0xFFF5F7FF);
 
@@ -33,36 +30,14 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     context.read<DashboardCubit>().loadDashboard();
-  }
-
-  String _firstName(String fullName) {
-    final parts = fullName.trim().split(' ');
-    return parts.isNotEmpty ? parts.first : fullName;
-  }
-
-  String _formattedTime() {
-    final now = DateTime.now();
-    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
-    final minute = now.minute.toString().padLeft(2, '0');
-    final period = now.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    getIt<HrmHeaderCubit>().update(
+      subtitle: 'Explore the dashboard',
+      bottom: const _DashboardTimePills(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final employeeRaw =
-        HiveStorage.employee.get(HiveKeys.employee) as Map?;
-    final employeeName = employeeRaw?['name'] as String? ?? 'Employee';
-    final employeePhoto = employeeRaw?['photo'] as String?;
-    final companyName = employeeRaw?['companyName'] as String?;
-
-    final initials = employeeName
-        .split(' ')
-        .where((w) => w.isNotEmpty)
-        .take(2)
-        .map((w) => w[0].toUpperCase())
-        .join();
-
     return Scaffold(
       backgroundColor: _pageBg,
       body: BlocListener<AuthBloc, AuthState>(
@@ -79,22 +54,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   context.read<DashboardCubit>().loadDashboard(),
               child: CustomScrollView(
                 slivers: [
-                  // ── Header ──────────────────────────────────────────────
-                  SliverToBoxAdapter(
-                    child: _Header(
-                      firstName: _firstName(employeeName),
-                      initials: initials,
-                      photoUrl: employeePhoto,
-                      companyName: companyName,
-                      time: _formattedTime(),
-                      onMenuTap: () => _showCompanySwitcher(context),
-                      onNotificationTap: () =>
-                          context.goNamed(RouteNames.notifications),
-                      onAvatarTap: () =>
-                          context.goNamed(RouteNames.profile),
-                    ),
-                  ),
-
                   if (state is DashboardLoading)
                     const SliverFillRemaining(
                       child: ShimmerDashboardBody(),
@@ -112,7 +71,6 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: _DashboardBody(data: state.data),
                     ),
                   ],
-
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
@@ -122,215 +80,124 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
-
-  void _showCompanySwitcher(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _CompanySwitcherSheet(
-        onSwitch: (companyId) {
-          Navigator.pop(context);
-          context.read<AuthBloc>().add(SwitchCompanyRequested(companyId));
-        },
-      ),
-    );
-  }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+String _toAmPm(String? t) {
+  if (t == null) return '--:--';
+  final parts = t.split(':');
+  if (parts.length < 2) return t;
+  final h = int.tryParse(parts[0]);
+  if (h == null) return t;
+  final period = h < 12 ? 'AM' : 'PM';
+  final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+  return '$h12:${parts[1]} $period';
+}
 
-class _Header extends StatelessWidget {
-  final String firstName;
-  final String initials;
-  final String? photoUrl;
-  final String? companyName;
-  final String time;
-  final VoidCallback onMenuTap;
-  final VoidCallback onNotificationTap;
-  final VoidCallback onAvatarTap;
+// ── Dashboard time pills (placed in shell header bottom slot) ─────────────────
 
-  const _Header({
-    required this.firstName,
-    required this.initials,
-    required this.photoUrl,
-    required this.companyName,
-    required this.time,
-    required this.onMenuTap,
-    required this.onNotificationTap,
-    required this.onAvatarTap,
-  });
+class _DashboardTimePills extends StatefulWidget {
+  const _DashboardTimePills();
+
+  @override
+  State<_DashboardTimePills> createState() => _DashboardTimePillsState();
+}
+
+class _DashboardTimePillsState extends State<_DashboardTimePills> {
+  String? _checkIn;
+  String? _checkOut;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchToday();
+  }
+
+  Future<void> _fetchToday() async {
+    try {
+      final res = await getIt<AttendanceRemoteDataSource>().getToday();
+      if (!mounted) return;
+      setState(() {
+        _checkIn  = _toAmPm(res.data?.checkIn);
+        _checkOut = _toAmPm(res.data?.checkOut);
+      });
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _navy,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          child: Column(
-            children: [
-              // ── Row 1: Menu + Greeting + Bell + Avatar ─────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Hamburger
-                  GestureDetector(
-                    onTap: onMenuTap,
-                    child: const Icon(Icons.menu_rounded,
-                        color: Colors.white, size: 26),
-                  ),
-                  const SizedBox(width: 14),
-
-                  // Greeting
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hi, $firstName!',
-                          style: AppTextStyles.titleLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Explore the dashboard',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Bell
-                  GestureDetector(
-                    onTap: onNotificationTap,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        Positioned(
-                          top: -2,
-                          right: -2,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFC107),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Avatar
-                  GestureDetector(
-                    onTap: onAvatarTap,
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white.withOpacity(0.15),
-                      backgroundImage: photoUrl != null
-                          ? NetworkImage(photoUrl!)
-                          : null,
-                      child: photoUrl == null
-                          ? Text(
-                              initials,
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-
-              // ── Row 2: Time pills ──────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: _TimePill(
-                      label: time,
-                      icon: Icons.replay_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _TimePill(
-                      label: 'Out time',
-                      icon: Icons.replay_rounded,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    return Row(
+      children: [
+        Expanded(
+          child: _TimePill(
+            label: _checkIn ?? '--:--',
+            sublabel: 'Check In',
+            icon: Icons.login_rounded,
+            active: _checkIn != null,
           ),
         ),
-      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _TimePill(
+            label: _checkOut ?? '--:--',
+            sublabel: 'Check Out',
+            icon: Icons.logout_rounded,
+            active: _checkOut != null,
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _TimePill extends StatelessWidget {
   final String label;
+  final String sublabel;
   final IconData icon;
+  final bool active;
 
-  const _TimePill({required this.label, required this.icon});
+  const _TimePill({
+    required this.label,
+    required this.sublabel,
+    required this.icon,
+    required this.active,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withOpacity(active ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border:
+            Border.all(color: Colors.white.withOpacity(active ? 0.3 : 0.1)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white70, size: 18),
+          Icon(icon,
+              color: active ? const Color(0xFFF5A623) : Colors.white38,
+              size: 18),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sublabel,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white54,
+                  fontSize: 10,
+                ),
               ),
-            ),
+              Text(
+                label,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: active ? Colors.white : Colors.white38,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-          const Icon(Icons.keyboard_arrow_down_rounded,
-              color: Colors.white60, size: 18),
         ],
       ),
     );
@@ -352,7 +219,6 @@ class _DashboardBody extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
 
-          // ── Summery ────────────────────────────────────────────────────
           _SectionHeader(
             title: 'Summery',
             action: const Icon(Icons.settings_outlined,
@@ -363,12 +229,10 @@ class _DashboardBody extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // ── Modules ────────────────────────────────────────────────────
           const _SectionHeader(title: 'Modules'),
           const SizedBox(height: 12),
           _ModulesGrid(),
 
-          // ── Learning ───────────────────────────────────────────────────
           if (HrmPermissions.canEnrollTraining &&
               data.myLearningProgress != null) ...[
             const SizedBox(height: 24),
@@ -493,7 +357,6 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon + Count on same row
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -623,8 +486,8 @@ class _ModuleTile extends StatelessWidget {
             if (locked) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content:
-                      Text('This feature is not available for your account.'),
+                  content: Text(
+                      'This feature is not available for your account.'),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -763,117 +626,6 @@ class _LearningCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Company Switcher Sheet ────────────────────────────────────────────────────
-
-class _CompanySwitcherSheet extends StatefulWidget {
-  final void Function(int companyId) onSwitch;
-  const _CompanySwitcherSheet({required this.onSwitch});
-
-  @override
-  State<_CompanySwitcherSheet> createState() => _CompanySwitcherSheetState();
-}
-
-class _CompanySwitcherSheetState extends State<_CompanySwitcherSheet> {
-  List<CompanyModel> _companies = [];
-  bool _loading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final ds = getIt<AuthRemoteDataSource>();
-      final response = await ds.getCompanies();
-      setState(() {
-        _companies = response.data ?? [];
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load companies';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Row(
-                children: [
-                  Text('Switch Company',
-                      style: AppTextStyles.titleSmall),
-                ],
-              ),
-            ),
-            const Divider(height: 16),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(color: _purple),
-              )
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(_error!,
-                    style: const TextStyle(color: Colors.red)),
-              )
-            else
-              ..._companies.map(
-                (c) => ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20),
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        c.isCurrent ? _purple : Colors.grey.shade100,
-                    child: Text(
-                      c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                      style: TextStyle(
-                        color: c.isCurrent ? Colors.white : _navy,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(c.name),
-                  trailing: c.isCurrent
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: _purple)
-                      : null,
-                  onTap: c.isCurrent
-                      ? null
-                      : () => widget.onSwitch(c.id),
-                ),
-              ),
-          ],
         ),
       ),
     );
