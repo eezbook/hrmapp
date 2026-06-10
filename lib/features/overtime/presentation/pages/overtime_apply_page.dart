@@ -113,6 +113,14 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
                 backgroundColor: Colors.green,
               ),
             );
+          } else if (state is OtOfflineQueued) {
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.amber.shade700,
+              ),
+            );
           } else if (state is OvertimeError) {
             setState(() => _error = state.failure.message);
           }

@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/error/error_handler.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/services/connectivity_service.dart';
+import '../../../../core/sync/sync_queue_service.dart';
 import '../../data/datasources/overtime_remote_datasource.dart';
 import '../../data/models/overtime_model.dart';
 
@@ -39,6 +42,13 @@ class OvertimeError extends OvertimeState {
   List<Object?> get props => [failure];
 }
 
+class OtOfflineQueued extends OvertimeState {
+  final String message;
+  const OtOfflineQueued({required this.message});
+  @override
+  List<Object?> get props => [message];
+}
+
 class OvertimeCubit extends Cubit<OvertimeState> {
   final OvertimeRemoteDataSource _remote;
 
@@ -62,6 +72,15 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   }
 
   Future<void> applyOvertime(Map<String, dynamic> params) async {
+    final isOnline = await getIt<ConnectivityService>().isOnline();
+    if (!isOnline) {
+      await getIt<SyncQueueService>().addToQueue('ot_request', params);
+      emit(const OtOfflineQueued(
+        message: 'Overtime request saved offline. Will sync when connected.',
+      ));
+      return;
+    }
+
     emit(OvertimeLoading());
     try {
       await _remote.createRequest(params);

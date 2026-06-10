@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
+import 'core/services/connectivity_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
@@ -17,6 +18,7 @@ Future<void> runHrmApp({Widget Function(Widget child)? wrapWith}) async {
   HiveStorage.registerAdapters();
   await HiveStorage.openBoxes();
   await configureDependencies();
+  getIt<ConnectivityService>().initialize();
   await getIt<NotificationService>().initialize();
   final app = const HrmApp();
   runApp(wrapWith != null ? wrapWith(app) : app);

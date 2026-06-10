@@ -57,3 +57,10 @@ class LeaveError extends LeaveState {
   @override
   List<Object?> get props => [failure];
 }
+
+class LeaveApplyOfflineQueued extends LeaveState {
+  final String message;
+  const LeaveApplyOfflineQueued({required this.message});
+  @override
+  List<Object?> get props => [message];
+}

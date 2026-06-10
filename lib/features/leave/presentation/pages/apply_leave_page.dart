@@ -38,6 +38,21 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   // 0 = Save as Draft, 1 = Send for Approval
   int _approvalStatus = 1;
 
+  static const List<String> _narrationSuggestions = [
+    'Feeling unwell / sick',
+    'Medical appointment',
+    'Family emergency',
+    'Personal work',
+    'Out of town / travel',
+    'Child care duty',
+    'Urgent household matter',
+    'Religious observance',
+    'Wedding / family function',
+    'Rest and recovery',
+    'Mental health day',
+    'Home maintenance / repair',
+  ];
+
   // TODO: future — backup employee support (requires employee search API endpoint
   // and backend update to HrmMobileLeaveController::apply() to accept backup_employee_id)
   // final _backupEmployeeCtrl = TextEditingController();
@@ -123,6 +138,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       setState(() => _error = 'Please select leave dates');
       return;
     }
+    if (_isHalfDay && !_isSingleDay) {
+      setState(() => _error = '1st/2nd half leave must be for a single day only');
+      return;
+    }
+    if (_calculatedDays == 0) {
+      setState(() => _error = 'Selected date range contains no working days');
+      return;
+    }
 
     context.read<LeaveBloc>().add(ApplyLeave({
           'leave_type_id': _selectedType!.id,
@@ -171,6 +194,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                 backgroundColor: Colors.green,
               ),
             );
+          } else if (state is LeaveApplyOfflineQueued) {
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.amber.shade700,
+              ),
+            );
           } else if (state is LeaveError) {
             setState(() => _error = state.failure.message);
           }
@@ -184,28 +215,6 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Approval Status ───────────────────────────
-                      DropdownButtonFormField<int>(
-                        value: _approvalStatus,
-                        decoration: const InputDecoration(
-                          labelText: 'Approval Status',
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 0,
-                            child: Text('Save as Draft'),
-                          ),
-                          DropdownMenuItem(
-                            value: 1,
-                            child: Text('Send for Approval'),
-                          ),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _approvalStatus = v ?? 1),
-                      ),
-
-                      const SizedBox(height: AppSpacing.md),
-
                       // TODO: future — Backup Employee field
                       // Requires: employee search API endpoint + backend update
                       // to HrmMobileLeaveController::apply() to accept backup_employee_id.
@@ -439,6 +448,47 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                           alignLabelWithHint: true,
                         ),
                         validator: Validators.reason,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: _narrationSuggestions
+                            .map((s) => ActionChip(
+                                  label: Text(s,
+                                      style: AppTextStyles.bodySmall),
+                                  onPressed: () => setState(() {
+                                    _reasonCtrl.text = s;
+                                    _reasonCtrl.selection =
+                                        TextSelection.fromPosition(
+                                      TextPosition(
+                                          offset: s.length),
+                                    );
+                                  }),
+                                ))
+                            .toList(),
+                      ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // ── Send for Approval ─────────────────────────
+                      DropdownButtonFormField<int>(
+                        value: _approvalStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Send for Approval',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text('Save as Draft'),
+                          ),
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text('Send for Approval'),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _approvalStatus = v ?? 1),
                       ),
 
                       const SizedBox(height: AppSpacing.md),

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../config/route_names.dart';
 import '../di/injection.dart';
 import '../permissions/hrm_permissions.dart';
+import '../services/connectivity_service.dart';
+import '../sync/sync_queue_service.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -437,10 +439,45 @@ class _ScaffoldWithNavState extends State<_ScaffoldWithNav> {
           final currentIndex = _indexFromLocation(location, items);
           return Scaffold(
             body: widget.child,
-            bottomNavigationBar: _CustomNavBar(
-              items: items,
-              currentIndex: currentIndex,
-              onTap: (i) => context.go(items[i].route),
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StreamBuilder<bool>(
+                  stream: getIt<ConnectivityService>().isOnlineStream,
+                  builder: (context, snapshot) {
+                    return FutureBuilder<int>(
+                      future: getIt<SyncQueueService>().pendingCount,
+                      builder: (context, countSnapshot) {
+                        final count = countSnapshot.data ?? 0;
+                        if (count == 0) return const SizedBox.shrink();
+                        return Container(
+                          width: double.infinity,
+                          color: Colors.amber.shade700,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.sync,
+                                  color: Colors.white, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$count action(s) pending sync...',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+                _CustomNavBar(
+                  items: items,
+                  currentIndex: currentIndex,
+                  onTap: (i) => context.go(items[i].route),
+                ),
+              ],
             ),
           );
         },
