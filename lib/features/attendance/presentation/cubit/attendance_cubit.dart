@@ -8,6 +8,8 @@ import '../../../../core/sync/sync_queue_service.dart';
 import '../../data/datasources/attendance_remote_datasource.dart';
 import '../../data/models/attendance_record_model.dart';
 import '../../data/models/attendance_summary_model.dart';
+import '../../../travel/data/repositories/travel_repository_impl.dart';
+import '../../../leave/domain/repositories/leave_repository.dart';
 
 // ── Punch status ───────────────────────────────────────────────────────────────
 
@@ -95,11 +97,13 @@ class AttendanceOfflineQueued extends AttendanceState {
 class AttendanceCubit extends Cubit<AttendanceState> {
   final AttendanceRemoteDataSource _remote;
   final LocationService _location;
+  final TravelRepository _travelRepo;
+  final LeaveRepository _leaveRepo;
 
   int _month = DateTime.now().month;
   int _year = DateTime.now().year;
 
-  AttendanceCubit(this._remote, this._location)
+  AttendanceCubit(this._remote, this._location, this._travelRepo, this._leaveRepo)
       : super(const AttendanceLoading());
 
   Future<void> load({int? month, int? year}) async {
@@ -153,6 +157,80 @@ class AttendanceCubit extends Cubit<AttendanceState> {
 
   Future<void> checkOut() => _punch(isCheckIn: false);
 
+  // Returns a blocking conflict message, or null when clear to punch.
+  // Each sub-check catches its own errors so a network failure never prevents check-in.
+  Future<String?> _checkConflicts() async {
+    // 1. Leave check — fetch fresh today record; on_leave means approved full-day leave.
+    // Half-day leave (status 'half_day' OR is_half_day flag) must NOT block check-in
+    // because the employee works the other half of the day.
+    try {
+      final todayResp = await _remote.getToday();
+      final today = todayResp.data;
+      if (today != null && today.status == 'on_leave') {
+        // Verify this is truly a full-day leave, not a half-day.
+        // Fetch approved leaves and look for one covering today with is_half_day=true.
+        bool isHalfDay = false;
+        try {
+          final leaveResult =
+              await _leaveRepo.getRequests(status: 'approved', page: 1);
+          leaveResult.fold(
+            (_) {},
+            (paginated) {
+              final now = DateTime.now();
+              final todayDate = DateTime(now.year, now.month, now.day);
+              for (final leave in paginated.items) {
+                try {
+                  final start = DateTime.parse(leave.startDate);
+                  final end = DateTime.parse(leave.endDate);
+                  if (!todayDate.isBefore(DateTime(start.year, start.month, start.day)) &&
+                      !todayDate.isAfter(DateTime(end.year, end.month, end.day)) &&
+                      leave.isHalfDay) {
+                    isHalfDay = true;
+                    break;
+                  }
+                } catch (_) {}
+              }
+            },
+          );
+        } catch (_) {}
+
+        if (!isHalfDay) {
+          return 'You have an approved leave today. Attendance cannot be marked.';
+        }
+      }
+    } catch (_) {}
+
+    // 2. Travel check — any approved travel whose dates span today blocks punch.
+    try {
+      final result = await _travelRepo.getTravelRequests(status: 'approved');
+      String? msg;
+      result.fold(
+        (_) {},
+        (paginated) {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          for (final travel in paginated.items) {
+            try {
+              final dep = DateTime.parse(travel.departureDate);
+              final ret = DateTime.parse(travel.returnDate);
+              final depDate = DateTime(dep.year, dep.month, dep.day);
+              final retDate = DateTime(ret.year, ret.month, ret.day);
+              if (!today.isBefore(depDate) && !today.isAfter(retDate)) {
+                msg =
+                    'You are on an approved travel to ${travel.destination}. '
+                    'Attendance cannot be marked during travel.';
+                break;
+              }
+            } catch (_) {}
+          }
+        },
+      );
+      if (msg != null) return msg;
+    } catch (_) {}
+
+    return null;
+  }
+
   Future<void> _punch({required bool isCheckIn}) async {
     final current = state;
     if (current is! AttendanceLoaded) return;
@@ -190,6 +268,16 @@ class AttendanceCubit extends Cubit<AttendanceState> {
     }
 
     emit(current.copyWith(punchStatus: PunchStatus.loading, punchError: null));
+
+    // Conflict checks run before GPS/location validation.
+    final conflictMsg = await _checkConflicts();
+    if (conflictMsg != null) {
+      emit(current.copyWith(
+        punchStatus: PunchStatus.error,
+        punchError: conflictMsg,
+      ));
+      return;
+    }
 
     try {
       // 1. Fetch both office and home locations
@@ -244,11 +332,16 @@ class AttendanceCubit extends Cubit<AttendanceState> {
         return;
       }
 
-      // 4. Call the API, passing which location type matched
+      // 4. Call the API, passing which location type matched.
+      // Include punch_time in local device time so the server stores PKT, not UTC.
+      final now = DateTime.now();
+      final punchTime =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
       final body = {
         'latitude': position.latitude,
         'longitude': position.longitude,
         'location_type': matchedType,
+        'punch_time': punchTime,
       };
       final resp = isCheckIn
           ? await _remote.checkIn(body)

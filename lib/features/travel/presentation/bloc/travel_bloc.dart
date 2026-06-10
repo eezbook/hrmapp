@@ -19,6 +19,8 @@ class TravelBloc extends Bloc<TravelEvent, TravelState> {
     on<SubmitExpenseClaim>(_onSubmitClaim);
     on<ApproveExpense>(_onApproveExpense);
     on<RejectExpense>(_onRejectExpense);
+    on<LoadTravelRequestDetail>(_onLoadTravelDetail);
+    on<LoadExpenseClaimDetail>(_onLoadExpenseDetail);
   }
 
   Future<void> _onLoadRequests(
@@ -148,6 +150,26 @@ class TravelBloc extends Bloc<TravelEvent, TravelState> {
     result.fold(
       (f) => emit(TravelError(f)),
       (_) => emit(TravelActionSuccess()),
+    );
+  }
+
+  Future<void> _onLoadTravelDetail(
+      LoadTravelRequestDetail event, Emitter<TravelState> emit) async {
+    emit(TravelLoading());
+    final result = await _repository.getTravelRequest(event.id);
+    result.fold(
+      (f) => emit(TravelError(f)),
+      (r) => emit(TravelRequestDetailLoaded(r)),
+    );
+  }
+
+  Future<void> _onLoadExpenseDetail(
+      LoadExpenseClaimDetail event, Emitter<TravelState> emit) async {
+    emit(TravelLoading());
+    final result = await _repository.getClaim(event.claimId);
+    result.fold(
+      (f) => emit(TravelError(f)),
+      (c) => emit(ExpenseClaimDetailLoaded(c)),
     );
   }
 }

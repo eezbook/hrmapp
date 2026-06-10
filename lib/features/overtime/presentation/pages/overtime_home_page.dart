@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/config/route_names.dart';
+import '../../../../core/cubit/hrm_header_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/permissions/hrm_permissions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/date_utils.dart';
-import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/avatar_widget.dart';
+import '../../../../core/widgets/confirmation_dialog.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/feature_header.dart';
 import '../../../../core/widgets/shimmer_loader.dart';
 import '../../../../core/widgets/status_pill.dart';
-import '../../../../core/widgets/confirmation_dialog.dart';
 import '../cubit/overtime_cubit.dart';
+
+const _purple = Color(0xFF7367F0);
+const _pageBg = Color(0xFFF5F7FF);
 
 class OvertimeHomePage extends StatefulWidget {
   const OvertimeHomePage({super.key});
@@ -33,9 +38,37 @@ class _OvertimeHomePageState extends State<OvertimeHomePage>
     super.initState();
     final tabs = _canApprove ? 2 : 1;
     _tabController = TabController(length: tabs, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      setState(() {});
+      _updateHeader(_tabController.index);
+    });
     context.read<OvertimeCubit>().loadRequests();
     if (_canApprove) {
       context.read<OvertimeCubit>().loadApprovals();
+    }
+    _updateHeader(0);
+  }
+
+  void _updateHeader(int tab) {
+    if (_canApprove) {
+      getIt<HrmHeaderCubit>().update(
+        subtitle: 'Overtime requests',
+        bottom: FeatureTabSwitcher(
+          labels: const ['My Requests', 'Approvals'],
+          selectedIndex: tab,
+          onChanged: (i) {
+            setState(() {});
+            _tabController.animateTo(i);
+            _updateHeader(i);
+          },
+        ),
+      );
+    } else {
+      getIt<HrmHeaderCubit>().update(
+        subtitle: 'Overtime requests',
+        clearBottom: true,
+      );
     }
   }
 
@@ -47,47 +80,32 @@ class _OvertimeHomePageState extends State<OvertimeHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Overtime',
+    return Scaffold(
+      backgroundColor: _pageBg,
       floatingActionButton: HrmPermissions.canApplyOvertime
           ? FloatingActionButton.extended(
-              onPressed: () =>
-                  context.goNamed(RouteNames.overtimeApply),
+              onPressed: () => context.goNamed(RouteNames.overtimeApply),
+              backgroundColor: _purple,
+              foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('Log Overtime'),
             )
           : null,
-      body: Column(
-        children: [
-          if (_canApprove)
-            TabBar(
+      body: _canApprove
+          ? TabBarView(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'My Requests'),
-                Tab(text: 'Approvals'),
+              children: [
+                _MyRequestsTab(
+                  filter: _filter,
+                  onFilterChanged: (f) => setState(() => _filter = f),
+                ),
+                _ApprovalsTab(),
               ],
+            )
+          : _MyRequestsTab(
+              filter: _filter,
+              onFilterChanged: (f) => setState(() => _filter = f),
             ),
-          Expanded(
-            child: _canApprove
-                ? TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _MyRequestsTab(
-                        filter: _filter,
-                        onFilterChanged: (f) =>
-                            setState(() => _filter = f),
-                      ),
-                      _ApprovalsTab(),
-                    ],
-                  )
-                : _MyRequestsTab(
-                    filter: _filter,
-                    onFilterChanged: (f) =>
-                        setState(() => _filter = f),
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -114,8 +132,7 @@ class _MyRequestsTab extends StatelessWidget {
         if (state is OvertimeError) {
           return ErrorView(
             message: state.failure.message,
-            onRetry: () =>
-                context.read<OvertimeCubit>().loadRequests(),
+            onRetry: () => context.read<OvertimeCubit>().loadRequests(),
           );
         }
         if (state is OvertimeLoaded) {
@@ -140,7 +157,6 @@ class _MyRequestsTab extends StatelessWidget {
                     ],
                   ),
                 ),
-              // Filter chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(
@@ -202,8 +218,7 @@ class _MyRequestsTab extends StatelessWidget {
                                   children: [
                                     StatusPill(req.status),
                                     Text(
-                                      CurrencyUtils.formatPkr(
-                                          req.amount),
+                                      CurrencyUtils.formatPkr(req.amount),
                                       style: AppTextStyles.labelSmall,
                                     ),
                                   ],
@@ -247,8 +262,7 @@ class _ApprovalsTab extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: state.approvals.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (_, i) {
                 final req = state.approvals[i];
                 return Card(
@@ -285,8 +299,7 @@ class _ApprovalsTab extends StatelessWidget {
                         ),
                         if (req.reason.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          Text(req.reason,
-                              style: AppTextStyles.bodySmall),
+                          Text(req.reason, style: AppTextStyles.bodySmall),
                         ],
                         const SizedBox(height: 12),
                         Row(
@@ -299,12 +312,10 @@ class _ApprovalsTab extends StatelessWidget {
                                       await showDialog<String>(
                                     context: context,
                                     builder: (_) => AlertDialog(
-                                      title:
-                                          const Text('Reject Overtime'),
+                                      title: const Text('Reject Overtime'),
                                       content: TextFormField(
                                         controller: ctrl,
-                                        decoration:
-                                            const InputDecoration(
+                                        decoration: const InputDecoration(
                                           hintText: 'Reason',
                                         ),
                                       ),
@@ -315,17 +326,14 @@ class _ApprovalsTab extends StatelessWidget {
                                           child: const Text('Cancel'),
                                         ),
                                         FilledButton(
-                                          onPressed: () =>
-                                              Navigator.pop(
-                                                  context,
-                                                  ctrl.text.trim()),
+                                          onPressed: () => Navigator.pop(
+                                              context, ctrl.text.trim()),
                                           child: const Text('Reject'),
                                         ),
                                       ],
                                     ),
                                   );
-                                  if (comment != null &&
-                                      context.mounted) {
+                                  if (comment != null && context.mounted) {
                                     context
                                         .read<OvertimeCubit>()
                                         .rejectRequest(req.id, comment);
@@ -346,8 +354,7 @@ class _ApprovalsTab extends StatelessWidget {
                                         'Approve this overtime request?',
                                     confirmLabel: 'Approve',
                                   );
-                                  if (confirm == true &&
-                                      context.mounted) {
+                                  if (confirm == true && context.mounted) {
                                     context
                                         .read<OvertimeCubit>()
                                         .approveRequest(req.id);
@@ -390,9 +397,8 @@ class _SummaryChip extends StatelessWidget {
         children: [
           Text(
             value,
-            style: AppTextStyles.titleSmall.copyWith(
-              color: scheme.onPrimaryContainer,
-            ),
+            style: AppTextStyles.titleSmall
+                .copyWith(color: scheme.onPrimaryContainer),
           ),
           Text(
             label,

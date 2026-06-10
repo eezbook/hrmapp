@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,8 +51,9 @@ class _TravelRequestPageState extends State<TravelRequestPage> {
   // final _advanceAmountCtrl = TextEditingController();
 
   int get _totalDays {
-    if (_departure == null || _returnDate == null) return 0;
-    return _returnDate!.difference(_departure!).inDays + 1;
+    if (_departure == null) return 0;
+    final end = _returnDate ?? _departure!;
+    return end.difference(_departure!).inDays + 1;
   }
 
   @override
@@ -80,10 +83,12 @@ class _TravelRequestPageState extends State<TravelRequestPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    if (_departure == null || _returnDate == null) {
-      setState(() => _error = 'Please select travel dates');
+    if (_departure == null) {
+      setState(() => _error = 'Please select departure date');
       return;
     }
+
+    final effectiveReturn = _returnDate ?? _departure!;
 
     context.read<TravelBloc>().add(
           CreateTravelRequest({
@@ -94,20 +99,18 @@ class _TravelRequestPageState extends State<TravelRequestPage> {
                 ? 'international'
                 : 'domestic',
             'departure_date':   HrmDateUtils.formatApi(_departure!),
-            'return_date':      HrmDateUtils.formatApi(_returnDate!),
+            'return_date':      HrmDateUtils.formatApi(effectiveReturn),
             'total_days':       _totalDays,
             'transport_mode':   _vehicleInfoCtrl.text.trim(),
             'no_of_persons':    int.tryParse(_noOfPersonsCtrl.text) ?? 0,
-            'visitor_names':
-                _visitorCtrls.map((c) => c.text.trim()).toList(),
+            'visitor_names':    jsonEncode(
+                _visitorCtrls.map((c) => c.text.trim()).toList()),
             'estimated_budget': double.tryParse(
                     _budgetCtrl.text.replaceAll(',', '')) ??
                 0,
             'notes':            _narrationCtrl.text.trim(),
             'request_date':     HrmDateUtils.formatApi(DateTime.now()),
             'approval_status':  _approvalStatus,
-            // TODO: future — 'advance_payment': _advancePayment ? 1 : 0,
-            // TODO: future — 'advance_amount': double.tryParse(_advanceAmountCtrl.text) ?? 0,
           }),
         );
   }
@@ -250,7 +253,7 @@ class _TravelRequestPageState extends State<TravelRequestPage> {
                 ),
 
                 // ── Total Traveling Days (read-only) ──────────────
-                if (_departure != null && _returnDate != null) ...[
+                if (_departure != null) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -262,7 +265,12 @@ class _TravelRequestPageState extends State<TravelRequestPage> {
                       children: [
                         Expanded(
                           child: Text(
-                            '${HrmDateUtils.formatDisplay(_departure!)} – ${HrmDateUtils.formatDisplay(_returnDate!)}',
+                            () {
+                              final end = _returnDate ?? _departure!;
+                              final start = HrmDateUtils.formatDisplay(_departure!);
+                              final endStr = HrmDateUtils.formatDisplay(end);
+                              return start == endStr ? start : '$start – $endStr';
+                            }(),
                             style: AppTextStyles.bodySmall.copyWith(
                               color: scheme.onPrimaryContainer,
                             ),

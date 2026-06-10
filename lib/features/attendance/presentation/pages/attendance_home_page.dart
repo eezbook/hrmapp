@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../core/config/route_names.dart';
-import '../../../../core/storage/hive_storage.dart';
+import '../../../../core/cubit/hrm_header_cubit.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/attendance_record_model.dart';
 import '../cubit/attendance_cubit.dart';
@@ -12,6 +11,17 @@ const _navy   = Color(0xFF1B2064);
 const _purple = Color(0xFF7367F0);
 const _golden = Color(0xFFF5A623);
 const _pageBg = Color(0xFFF5F7FF);
+
+String _toAmPm(String? t) {
+  if (t == null) return '--:--';
+  final parts = t.split(':');
+  if (parts.length < 2) return t;
+  final h = int.tryParse(parts[0]);
+  if (h == null) return t;
+  final period = h < 12 ? 'AM' : 'PM';
+  final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+  return '$h12:${parts[1]} $period';
+}
 
 const _clrPresent  = Color(0xFF4CAF50);
 const _clrExDelay  = Color(0xFF1A237E);
@@ -34,133 +44,108 @@ class _AttendanceHomePageState extends State<AttendanceHomePage> {
   void initState() {
     super.initState();
     context.read<AttendanceCubit>().load();
-  }
-
-  String _firstName(String fullName) {
-    final parts = fullName.trim().split(' ');
-    return parts.isNotEmpty ? parts.first : fullName;
+    getIt<HrmHeaderCubit>().update(
+      subtitle: 'Check in / out',
+      clearBottom: true,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final employeeRaw   = HiveStorage.employee.get(HiveKeys.employee) as Map?;
-    final employeeName  = employeeRaw?['name'] as String? ?? 'Employee';
-    final employeePhoto = employeeRaw?['photo'] as String?;
-    final initials = employeeName
-        .split(' ')
-        .where((w) => w.isNotEmpty)
-        .take(2)
-        .map((w) => w[0].toUpperCase())
-        .join();
-
     return Scaffold(
       backgroundColor: _pageBg,
-      body: Column(
-        children: [
-          _AttendanceHeader(
-            firstName: _firstName(employeeName),
-            initials: initials,
-            photoUrl: employeePhoto,
-            onNotificationTap: () =>
-                context.goNamed(RouteNames.notifications),
-            onAvatarTap: () => context.goNamed(RouteNames.profile),
-          ),
-          Expanded(
-            child: BlocConsumer<AttendanceCubit, AttendanceState>(
-              listener: (context, state) {
-                if (state is AttendanceOfflineQueued) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.amber.shade700,
-                      behavior: SnackBarBehavior.floating,
+      body: BlocConsumer<AttendanceCubit, AttendanceState>(
+        listener: (context, state) {
+          if (state is AttendanceOfflineQueued) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.amber.shade700,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+          if (state is! AttendanceLoaded) return;
+          if (state.punchStatus == PunchStatus.success) {
+            final today = state.todayRecord;
+            final isCheckOut = today?.checkOut != null;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isCheckOut
+                      ? 'Checked out successfully at ${_toAmPm(today?.checkOut)}'
+                      : 'Checked in successfully at ${_toAmPm(today?.checkIn)}',
+                ),
+                backgroundColor: _clrPresent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          if (state.punchStatus == PunchStatus.error &&
+              state.punchError != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.punchError!),
+                backgroundColor: _clrAbsent,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is AttendanceLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: _purple),
+            );
+          }
+          if (state is AttendanceError) {
+            return _ErrorBody(
+              message: state.message,
+              onRetry: () => context.read<AttendanceCubit>().load(),
+            );
+          }
+          if (state is AttendanceLoaded) {
+            return RefreshIndicator(
+              color: _purple,
+              onRefresh: () => context
+                  .read<AttendanceCubit>()
+                  .load(month: state.month, year: state.year),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TodayPunchCard(
+                      todayRecord: state.todayRecord,
+                      punchStatus: state.punchStatus,
+                      onCheckIn: () =>
+                          context.read<AttendanceCubit>().checkIn(),
+                      onCheckOut: () =>
+                          context.read<AttendanceCubit>().checkOut(),
                     ),
-                  );
-                  return;
-                }
-                if (state is! AttendanceLoaded) return;
-                if (state.punchStatus == PunchStatus.success) {
-                  final today = state.todayRecord;
-                  final isCheckOut = today?.checkOut != null;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isCheckOut
-                            ? 'Checked out successfully at ${today?.checkOut ?? ''}'
-                            : 'Checked in successfully at ${today?.checkIn ?? ''}',
-                      ),
-                      backgroundColor: _clrPresent,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-                if (state.punchStatus == PunchStatus.error &&
-                    state.punchError != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.punchError!),
-                      backgroundColor: _clrAbsent,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 5),
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is AttendanceLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: _purple),
-                  );
-                }
-                if (state is AttendanceError) {
-                  return _ErrorBody(
-                    message: state.message,
-                    onRetry: () => context.read<AttendanceCubit>().load(),
-                  );
-                }
-                if (state is AttendanceLoaded) {
-                  return RefreshIndicator(
-                    color: _purple,
-                    onRefresh: () => context
-                        .read<AttendanceCubit>()
-                        .load(month: state.month, year: state.year),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _TodayPunchCard(
-                            todayRecord: state.todayRecord,
-                            punchStatus: state.punchStatus,
-                            onCheckIn: () =>
-                                context.read<AttendanceCubit>().checkIn(),
-                            onCheckOut: () =>
-                                context.read<AttendanceCubit>().checkOut(),
-                          ),
-                          const SizedBox(height: 20),
-                          _WeeklyAttendanceCard(state: state),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Attendance',
-                            style: AppTextStyles.titleSmall.copyWith(
-                              color: _navy,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const _ActionGrid(),
-                        ],
+                    const SizedBox(height: 20),
+                    _WeeklyAttendanceCard(state: state),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Attendance',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: _navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
                       ),
                     ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ],
+                    const SizedBox(height: 12),
+                    const _ActionGrid(),
+                  ],
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -243,14 +228,14 @@ class _TodayPunchCard extends StatelessWidget {
             children: [
               _TimeBlock(
                 label: 'Check In',
-                time: todayRecord?.checkIn ?? '--:--',
+                time: _toAmPm(todayRecord?.checkIn),
                 icon: Icons.login_rounded,
                 active: checkedIn,
               ),
               const SizedBox(width: 16),
               _TimeBlock(
                 label: 'Check Out',
-                time: todayRecord?.checkOut ?? '--:--',
+                time: _toAmPm(todayRecord?.checkOut),
                 icon: Icons.logout_rounded,
                 active: checkedOut,
               ),
@@ -262,9 +247,8 @@ class _TodayPunchCard extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                onPressed: _isLoading
-                    ? null
-                    : (checkedIn ? onCheckOut : onCheckIn),
+                onPressed:
+                    _isLoading ? null : (checkedIn ? onCheckOut : onCheckIn),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _golden,
                   foregroundColor: Colors.white,
@@ -430,120 +414,6 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
-class _AttendanceHeader extends StatelessWidget {
-  final String firstName;
-  final String initials;
-  final String? photoUrl;
-  final VoidCallback onNotificationTap;
-  final VoidCallback onAvatarTap;
-
-  const _AttendanceHeader({
-    required this.firstName,
-    required this.initials,
-    required this.photoUrl,
-    required this.onNotificationTap,
-    required this.onAvatarTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _navy,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hi, $firstName!',
-                      style: AppTextStyles.titleLarge.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Explore the dashboard',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  GestureDetector(
-                    onTap: onNotificationTap,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.notifications_outlined,
-                          color: Colors.white, size: 22),
-                    ),
-                  ),
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFC107),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: onAvatarTap,
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.white.withOpacity(0.15),
-                  backgroundImage:
-                      photoUrl != null ? NetworkImage(photoUrl!) : null,
-                  child: photoUrl == null
-                      ? Text(
-                          initials,
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Monthly Attendance Card ────────────────────────────────────────────────────
 
 class _WeeklyAttendanceCard extends StatelessWidget {
@@ -591,7 +461,6 @@ class _WeeklyAttendanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header with month navigation ──────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -619,8 +488,6 @@ class _WeeklyAttendanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // ── Donut + legend ────────────────────────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -674,8 +541,6 @@ class _WeeklyAttendanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // ── Stats row ─────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
             decoration: BoxDecoration(

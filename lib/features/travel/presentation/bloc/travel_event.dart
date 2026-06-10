@@ -49,3 +49,15 @@ class RejectExpense extends TravelEvent {
   final String comment;
   const RejectExpense(this.id, this.comment);
 }
+class LoadTravelRequestDetail extends TravelEvent {
+  final int id;
+  const LoadTravelRequestDetail(this.id);
+  @override
+  List<Object?> get props => [id];
+}
+class LoadExpenseClaimDetail extends TravelEvent {
+  final int claimId;
+  const LoadExpenseClaimDetail(this.claimId);
+  @override
+  List<Object?> get props => [claimId];
+}
