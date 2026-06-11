@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/error/error_handler.dart';
 import '../../data/datasources/training_remote_datasource.dart';
+import '../../data/models/course_model.dart';
 import 'training_event.dart';
 import 'training_state.dart';
 
@@ -13,6 +14,7 @@ class TrainingBloc extends Bloc<TrainingEvent, TrainingState> {
     on<EnrollCourse>(_onEnroll);
     on<LoadMyLearning>(_onLoadMyLearning);
     on<LoadCertificates>(_onLoadCertificates);
+    on<LoadTrainingRequests>(_onLoadTrainingRequests);
     on<SubmitTrainingRequest>(_onSubmitTrainingRequest);
   }
 
@@ -60,10 +62,23 @@ class TrainingBloc extends Bloc<TrainingEvent, TrainingState> {
     emit(TrainingLoading());
     try {
       final res = await _remote.getMyLearning();
-      final data = res.data ?? {};
+      final data = (res.data as Map<String, dynamic>?) ?? {};
+
+      List<CourseModel> _parseList(dynamic raw) {
+        if (raw is! List) return [];
+        return raw
+            .whereType<Map<String, dynamic>>()
+            .map(CourseModel.fromJson)
+            .toList();
+      }
+
       emit(MyLearningLoaded(
-        data['in_progress'] ?? [],
-        data['completed'] ?? [],
+        enrolledCount: (data['enrolled'] as num?)?.toInt() ?? 0,
+        completedCount: (data['completed'] as num?)?.toInt() ?? 0,
+        inProgressCount: (data['inProgress'] as num?)?.toInt() ?? 0,
+        totalHours: (data['totalHours'] as num?)?.toDouble() ?? 0.0,
+        inProgressCourses: _parseList(data['inProgressCourses']),
+        completedCourses: _parseList(data['completedCourses']),
       ));
     } catch (e) {
       emit(TrainingError(ErrorHandler.handle(e)));
@@ -76,6 +91,17 @@ class TrainingBloc extends Bloc<TrainingEvent, TrainingState> {
     try {
       final res = await _remote.getCertificates();
       emit(CertificatesLoaded(res.data ?? []));
+    } catch (e) {
+      emit(TrainingError(ErrorHandler.handle(e)));
+    }
+  }
+
+  Future<void> _onLoadTrainingRequests(
+      LoadTrainingRequests event, Emitter<TrainingState> emit) async {
+    emit(TrainingLoading());
+    try {
+      final res = await _remote.getTrainingRequests(status: event.status);
+      emit(TrainingRequestsLoaded(res.data ?? []));
     } catch (e) {
       emit(TrainingError(ErrorHandler.handle(e)));
     }

@@ -48,6 +48,11 @@ _OvertimeSummaryModel _$OvertimeSummaryModelFromJson(
   totalApprovedHours: (json['totalApprovedHours'] as num?)?.toDouble() ?? 0.0,
   totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
   pendingCount: (json['pendingCount'] as num?)?.toInt() ?? 0,
+  overtimeEnabled: json['overtimeEnabled'] as bool? ?? true,
+  normalRate: (json['normalRate'] as num?)?.toDouble() ?? 1.5,
+  holidayRate: (json['holidayRate'] as num?)?.toDouble() ?? 2.0,
+  dailyThresholdHours: (json['dailyThresholdHours'] as num?)?.toInt() ?? 4,
+  usedHoursToday: (json['usedHoursToday'] as num?)?.toDouble() ?? 0.0,
 );
 
 Map<String, dynamic> _$OvertimeSummaryModelToJson(
@@ -56,4 +61,9 @@ Map<String, dynamic> _$OvertimeSummaryModelToJson(
   'totalApprovedHours': instance.totalApprovedHours,
   'totalAmount': instance.totalAmount,
   'pendingCount': instance.pendingCount,
+  'overtimeEnabled': instance.overtimeEnabled,
+  'normalRate': instance.normalRate,
+  'holidayRate': instance.holidayRate,
+  'dailyThresholdHours': instance.dailyThresholdHours,
+  'usedHoursToday': instance.usedHoursToday,
 };

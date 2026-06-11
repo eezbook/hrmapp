@@ -314,7 +314,7 @@ as String?,
 /// @nodoc
 mixin _$OvertimeSummaryModel {
 
- double get totalApprovedHours; double get totalAmount; int get pendingCount;
+ double get totalApprovedHours; double get totalAmount; int get pendingCount; bool get overtimeEnabled; double get normalRate; double get holidayRate; int get dailyThresholdHours; double get usedHoursToday;
 /// Create a copy of OvertimeSummaryModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -327,16 +327,16 @@ $OvertimeSummaryModelCopyWith<OvertimeSummaryModel> get copyWith => _$OvertimeSu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OvertimeSummaryModel&&(identical(other.totalApprovedHours, totalApprovedHours) || other.totalApprovedHours == totalApprovedHours)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.pendingCount, pendingCount) || other.pendingCount == pendingCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OvertimeSummaryModel&&(identical(other.totalApprovedHours, totalApprovedHours) || other.totalApprovedHours == totalApprovedHours)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.pendingCount, pendingCount) || other.pendingCount == pendingCount)&&(identical(other.overtimeEnabled, overtimeEnabled) || other.overtimeEnabled == overtimeEnabled)&&(identical(other.normalRate, normalRate) || other.normalRate == normalRate)&&(identical(other.holidayRate, holidayRate) || other.holidayRate == holidayRate)&&(identical(other.dailyThresholdHours, dailyThresholdHours) || other.dailyThresholdHours == dailyThresholdHours)&&(identical(other.usedHoursToday, usedHoursToday) || other.usedHoursToday == usedHoursToday));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalApprovedHours,totalAmount,pendingCount);
+int get hashCode => Object.hash(runtimeType,totalApprovedHours,totalAmount,pendingCount,overtimeEnabled,normalRate,holidayRate,dailyThresholdHours,usedHoursToday);
 
 @override
 String toString() {
-  return 'OvertimeSummaryModel(totalApprovedHours: $totalApprovedHours, totalAmount: $totalAmount, pendingCount: $pendingCount)';
+  return 'OvertimeSummaryModel(totalApprovedHours: $totalApprovedHours, totalAmount: $totalAmount, pendingCount: $pendingCount, overtimeEnabled: $overtimeEnabled, normalRate: $normalRate, holidayRate: $holidayRate, dailyThresholdHours: $dailyThresholdHours, usedHoursToday: $usedHoursToday)';
 }
 
 
@@ -347,7 +347,7 @@ abstract mixin class $OvertimeSummaryModelCopyWith<$Res>  {
   factory $OvertimeSummaryModelCopyWith(OvertimeSummaryModel value, $Res Function(OvertimeSummaryModel) _then) = _$OvertimeSummaryModelCopyWithImpl;
 @useResult
 $Res call({
- double totalApprovedHours, double totalAmount, int pendingCount
+ double totalApprovedHours, double totalAmount, int pendingCount, bool overtimeEnabled, double normalRate, double holidayRate, int dailyThresholdHours, double usedHoursToday
 });
 
 
@@ -364,12 +364,17 @@ class _$OvertimeSummaryModelCopyWithImpl<$Res>
 
 /// Create a copy of OvertimeSummaryModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? totalApprovedHours = null,Object? totalAmount = null,Object? pendingCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? totalApprovedHours = null,Object? totalAmount = null,Object? pendingCount = null,Object? overtimeEnabled = null,Object? normalRate = null,Object? holidayRate = null,Object? dailyThresholdHours = null,Object? usedHoursToday = null,}) {
   return _then(_self.copyWith(
 totalApprovedHours: null == totalApprovedHours ? _self.totalApprovedHours : totalApprovedHours // ignore: cast_nullable_to_non_nullable
 as double,totalAmount: null == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
 as double,pendingCount: null == pendingCount ? _self.pendingCount : pendingCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,overtimeEnabled: null == overtimeEnabled ? _self.overtimeEnabled : overtimeEnabled // ignore: cast_nullable_to_non_nullable
+as bool,normalRate: null == normalRate ? _self.normalRate : normalRate // ignore: cast_nullable_to_non_nullable
+as double,holidayRate: null == holidayRate ? _self.holidayRate : holidayRate // ignore: cast_nullable_to_non_nullable
+as double,dailyThresholdHours: null == dailyThresholdHours ? _self.dailyThresholdHours : dailyThresholdHours // ignore: cast_nullable_to_non_nullable
+as int,usedHoursToday: null == usedHoursToday ? _self.usedHoursToday : usedHoursToday // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -454,10 +459,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double totalApprovedHours,  double totalAmount,  int pendingCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double totalApprovedHours,  double totalAmount,  int pendingCount,  bool overtimeEnabled,  double normalRate,  double holidayRate,  int dailyThresholdHours,  double usedHoursToday)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OvertimeSummaryModel() when $default != null:
-return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);case _:
+return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount,_that.overtimeEnabled,_that.normalRate,_that.holidayRate,_that.dailyThresholdHours,_that.usedHoursToday);case _:
   return orElse();
 
 }
@@ -475,10 +480,10 @@ return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);c
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double totalApprovedHours,  double totalAmount,  int pendingCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double totalApprovedHours,  double totalAmount,  int pendingCount,  bool overtimeEnabled,  double normalRate,  double holidayRate,  int dailyThresholdHours,  double usedHoursToday)  $default,) {final _that = this;
 switch (_that) {
 case _OvertimeSummaryModel():
-return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);case _:
+return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount,_that.overtimeEnabled,_that.normalRate,_that.holidayRate,_that.dailyThresholdHours,_that.usedHoursToday);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -495,10 +500,10 @@ return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);c
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double totalApprovedHours,  double totalAmount,  int pendingCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double totalApprovedHours,  double totalAmount,  int pendingCount,  bool overtimeEnabled,  double normalRate,  double holidayRate,  int dailyThresholdHours,  double usedHoursToday)?  $default,) {final _that = this;
 switch (_that) {
 case _OvertimeSummaryModel() when $default != null:
-return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);case _:
+return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount,_that.overtimeEnabled,_that.normalRate,_that.holidayRate,_that.dailyThresholdHours,_that.usedHoursToday);case _:
   return null;
 
 }
@@ -510,12 +515,17 @@ return $default(_that.totalApprovedHours,_that.totalAmount,_that.pendingCount);c
 @JsonSerializable()
 
 class _OvertimeSummaryModel implements OvertimeSummaryModel {
-  const _OvertimeSummaryModel({this.totalApprovedHours = 0.0, this.totalAmount = 0.0, this.pendingCount = 0});
+  const _OvertimeSummaryModel({this.totalApprovedHours = 0.0, this.totalAmount = 0.0, this.pendingCount = 0, this.overtimeEnabled = true, this.normalRate = 1.5, this.holidayRate = 2.0, this.dailyThresholdHours = 4, this.usedHoursToday = 0.0});
   factory _OvertimeSummaryModel.fromJson(Map<String, dynamic> json) => _$OvertimeSummaryModelFromJson(json);
 
 @override@JsonKey() final  double totalApprovedHours;
 @override@JsonKey() final  double totalAmount;
 @override@JsonKey() final  int pendingCount;
+@override@JsonKey() final  bool overtimeEnabled;
+@override@JsonKey() final  double normalRate;
+@override@JsonKey() final  double holidayRate;
+@override@JsonKey() final  int dailyThresholdHours;
+@override@JsonKey() final  double usedHoursToday;
 
 /// Create a copy of OvertimeSummaryModel
 /// with the given fields replaced by the non-null parameter values.
@@ -530,16 +540,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OvertimeSummaryModel&&(identical(other.totalApprovedHours, totalApprovedHours) || other.totalApprovedHours == totalApprovedHours)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.pendingCount, pendingCount) || other.pendingCount == pendingCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OvertimeSummaryModel&&(identical(other.totalApprovedHours, totalApprovedHours) || other.totalApprovedHours == totalApprovedHours)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.pendingCount, pendingCount) || other.pendingCount == pendingCount)&&(identical(other.overtimeEnabled, overtimeEnabled) || other.overtimeEnabled == overtimeEnabled)&&(identical(other.normalRate, normalRate) || other.normalRate == normalRate)&&(identical(other.holidayRate, holidayRate) || other.holidayRate == holidayRate)&&(identical(other.dailyThresholdHours, dailyThresholdHours) || other.dailyThresholdHours == dailyThresholdHours)&&(identical(other.usedHoursToday, usedHoursToday) || other.usedHoursToday == usedHoursToday));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalApprovedHours,totalAmount,pendingCount);
+int get hashCode => Object.hash(runtimeType,totalApprovedHours,totalAmount,pendingCount,overtimeEnabled,normalRate,holidayRate,dailyThresholdHours,usedHoursToday);
 
 @override
 String toString() {
-  return 'OvertimeSummaryModel(totalApprovedHours: $totalApprovedHours, totalAmount: $totalAmount, pendingCount: $pendingCount)';
+  return 'OvertimeSummaryModel(totalApprovedHours: $totalApprovedHours, totalAmount: $totalAmount, pendingCount: $pendingCount, overtimeEnabled: $overtimeEnabled, normalRate: $normalRate, holidayRate: $holidayRate, dailyThresholdHours: $dailyThresholdHours, usedHoursToday: $usedHoursToday)';
 }
 
 
@@ -550,7 +560,7 @@ abstract mixin class _$OvertimeSummaryModelCopyWith<$Res> implements $OvertimeSu
   factory _$OvertimeSummaryModelCopyWith(_OvertimeSummaryModel value, $Res Function(_OvertimeSummaryModel) _then) = __$OvertimeSummaryModelCopyWithImpl;
 @override @useResult
 $Res call({
- double totalApprovedHours, double totalAmount, int pendingCount
+ double totalApprovedHours, double totalAmount, int pendingCount, bool overtimeEnabled, double normalRate, double holidayRate, int dailyThresholdHours, double usedHoursToday
 });
 
 
@@ -567,12 +577,17 @@ class __$OvertimeSummaryModelCopyWithImpl<$Res>
 
 /// Create a copy of OvertimeSummaryModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? totalApprovedHours = null,Object? totalAmount = null,Object? pendingCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? totalApprovedHours = null,Object? totalAmount = null,Object? pendingCount = null,Object? overtimeEnabled = null,Object? normalRate = null,Object? holidayRate = null,Object? dailyThresholdHours = null,Object? usedHoursToday = null,}) {
   return _then(_OvertimeSummaryModel(
 totalApprovedHours: null == totalApprovedHours ? _self.totalApprovedHours : totalApprovedHours // ignore: cast_nullable_to_non_nullable
 as double,totalAmount: null == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
 as double,pendingCount: null == pendingCount ? _self.pendingCount : pendingCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,overtimeEnabled: null == overtimeEnabled ? _self.overtimeEnabled : overtimeEnabled // ignore: cast_nullable_to_non_nullable
+as bool,normalRate: null == normalRate ? _self.normalRate : normalRate // ignore: cast_nullable_to_non_nullable
+as double,holidayRate: null == holidayRate ? _self.holidayRate : holidayRate // ignore: cast_nullable_to_non_nullable
+as double,dailyThresholdHours: null == dailyThresholdHours ? _self.dailyThresholdHours : dailyThresholdHours // ignore: cast_nullable_to_non_nullable
+as int,usedHoursToday: null == usedHoursToday ? _self.usedHoursToday : usedHoursToday // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 

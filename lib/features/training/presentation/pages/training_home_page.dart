@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -6,16 +5,20 @@ import '../../../../core/config/route_names.dart';
 import '../../../../core/cubit/hrm_header_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/feature_header.dart';
 import '../../../../core/widgets/shimmer_loader.dart';
+import '../../../../core/widgets/status_pill.dart';
+import '../../data/models/training_request_model.dart';
 import '../bloc/training_bloc.dart';
 import '../bloc/training_event.dart';
 import '../bloc/training_state.dart';
 
 const _purple = Color(0xFF7367F0);
+const _navy = Color(0xFF1B2064);
 
 class TrainingHomePage extends StatefulWidget {
   const TrainingHomePage({super.key});
@@ -27,10 +30,8 @@ class TrainingHomePage extends StatefulWidget {
 class _TrainingHomePageState extends State<TrainingHomePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _selectedTab = 0;
-  String? _selectedCategory;
 
-  static const _tabs = ['Library', 'My Learning', 'Certificates'];
+  static const _tabs = ['My Trainings', 'Certificates'];
 
   @override
   void initState() {
@@ -38,11 +39,20 @@ class _TrainingHomePageState extends State<TrainingHomePage>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
-      setState(() => _selectedTab = _tabController.index);
-      _updateHeader(_tabController.index);
+      final idx = _tabController.index;
+      _updateHeader(idx);
+      _loadTabData(idx);
     });
-    context.read<TrainingBloc>().add(const LoadCourses());
+    context.read<TrainingBloc>().add(const LoadTrainingRequests());
     _updateHeader(0);
+  }
+
+  void _loadTabData(int idx) {
+    if (idx == 0) {
+      context.read<TrainingBloc>().add(const LoadTrainingRequests());
+    } else {
+      context.read<TrainingBloc>().add(const LoadCertificates());
+    }
   }
 
   void _updateHeader(int tab) {
@@ -52,9 +62,9 @@ class _TrainingHomePageState extends State<TrainingHomePage>
         labels: _tabs,
         selectedIndex: tab,
         onChanged: (i) {
-          setState(() => _selectedTab = i);
           _tabController.animateTo(i);
           _updateHeader(i);
+          _loadTabData(i);
         },
       ),
     );
@@ -70,45 +80,21 @@ class _TrainingHomePageState extends State<TrainingHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: featurePageBg,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed(RouteNames.trainingRequest),
-        backgroundColor: _purple,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Request',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-      ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _LibraryTab(
-            selectedCategory: _selectedCategory,
-            onCategoryChanged: (c) {
-              setState(() => _selectedCategory = c);
-              context.read<TrainingBloc>().add(LoadCourses(category: c));
-            },
-          ),
-          const _MyLearningTab(),
-          const _CertificatesTab(),
+        children: const [
+          _MyTrainingsTab(),
+          _CertificatesTab(),
         ],
       ),
     );
   }
 }
 
-// ── Library Tab ───────────────────────────────────────────────────────────────
+// ── My Trainings Tab ──────────────────────────────────────────────────────────
 
-class _LibraryTab extends StatelessWidget {
-  final String? selectedCategory;
-  final void Function(String?) onCategoryChanged;
-
-  const _LibraryTab({
-    required this.selectedCategory,
-    required this.onCategoryChanged,
-  });
+class _MyTrainingsTab extends StatelessWidget {
+  const _MyTrainingsTab();
 
   @override
   Widget build(BuildContext context) {
@@ -118,223 +104,24 @@ class _LibraryTab extends StatelessWidget {
         if (state is TrainingError) {
           return ErrorView(
             message: state.failure.message,
-            onRetry: () =>
-                context.read<TrainingBloc>().add(const LoadCourses()),
+            onRetry: () => context
+                .read<TrainingBloc>()
+                .add(const LoadTrainingRequests()),
           );
         }
-        if (state is CoursesLoaded) {
-          return Column(
-            children: [
-              if (state.categories.isNotEmpty)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: const Text('All'),
-                          selected: selectedCategory == null,
-                          onSelected: (_) => onCategoryChanged(null),
-                        ),
-                      ),
-                      ...state.categories.map((cat) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(cat),
-                              selected: selectedCategory == cat,
-                              onSelected: (_) => onCategoryChanged(cat),
-                            ),
-                          )),
-                    ],
-                  ),
-                ),
-              Expanded(
-                child: state.courses.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.school_rounded,
-                        title: 'No courses found',
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(12),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.75,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: state.courses.length,
-                        itemBuilder: (_, i) =>
-                            _CourseCard(course: state.courses[i]),
-                      ),
-              ),
-            ],
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
-}
-
-class _CourseCard extends StatelessWidget {
-  final course;
-  const _CourseCard({required this.course});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: () => context.goNamed(
-        RouteNames.courseDetail,
-        pathParameters: {'courseId': course.id.toString()},
-      ),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  course.thumbnailUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: course.thumbnailUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) =>
-                              Container(color: scheme.primaryContainer),
-                          errorWidget: (_, __, ___) => Container(
-                              color: scheme.primaryContainer,
-                              child: Icon(Icons.school,
-                                  color: scheme.onPrimaryContainer)),
-                        )
-                      : Container(
-                          color: scheme.primaryContainer,
-                          child: Icon(Icons.school,
-                              color: scheme.onPrimaryContainer),
-                        ),
-                  if (course.isMandatory == true)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.rejected,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Required',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: Colors.white,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.title,
-                      style: AppTextStyles.titleSmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    if (course.myProgress != null &&
-                        (course.myProgress as double) > 0) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: (course.myProgress as double) / 100,
-                                minHeight: 5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${(course.myProgress as double).toStringAsFixed(0)}%',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: _purple,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── My Learning Tab ───────────────────────────────────────────────────────────
-
-class _MyLearningTab extends StatelessWidget {
-  const _MyLearningTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<TrainingBloc, TrainingState>(
-      builder: (context, state) {
-        if (state is TrainingLoading) return const ShimmerListLoader();
-        if (state is MyLearningLoaded) {
-          if (state.inProgress.isEmpty && state.completed.isEmpty) {
+        if (state is TrainingRequestsLoaded) {
+          if (state.requests.isEmpty) {
             return const EmptyState(
-              icon: Icons.play_circle_outline_rounded,
-              title: 'No courses in progress',
-              subtitle: 'Enrol in courses from the Library tab.',
+              icon: Icons.school_rounded,
+              title: 'No trainings assigned',
+              subtitle: 'Your approved training programmes will appear here.',
             );
           }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (state.inProgress.isNotEmpty) ...[
-                Text('In Progress', style: AppTextStyles.titleSmall),
-                const SizedBox(height: 10),
-                ...state.inProgress.map((c) => _LearningCard(course: c)),
-              ],
-              if (state.completed.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text('Completed', style: AppTextStyles.titleSmall),
-                const SizedBox(height: 10),
-                ...state.completed.map((c) => _LearningCard(course: c)),
-              ],
-            ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            itemCount: state.requests.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => _TrainingCard(training: state.requests[i]),
           );
         }
         return const SizedBox.shrink();
@@ -343,64 +130,236 @@ class _MyLearningTab extends StatelessWidget {
   }
 }
 
-class _LearningCard extends StatelessWidget {
-  final course;
-  const _LearningCard({required this.course});
+class _TrainingCard extends StatelessWidget {
+  final TrainingRequestModel training;
+  const _TrainingCard({required this.training});
+
+  double _progress() {
+    final start = DateTime.tryParse(training.startDate);
+    if (start == null || training.totalDays <= 0) return 0.0;
+    final now = DateTime.now();
+    if (now.isBefore(start)) return 0.0;
+    final end = DateTime.tryParse(training.endDate);
+    if (end != null && now.isAfter(end)) return 1.0;
+    final elapsed = now.difference(start).inDays + 1;
+    return (elapsed / training.totalDays).clamp(0.0, 1.0);
+  }
+
+  int _daysElapsed() {
+    final start = DateTime.tryParse(training.startDate);
+    if (start == null) return 0;
+    final now = DateTime.now();
+    if (now.isBefore(start)) return 0;
+    final end = DateTime.tryParse(training.endDate);
+    if (end != null && now.isAfter(end)) return training.totalDays;
+    return (now.difference(start).inDays + 1).clamp(0, training.totalDays);
+  }
+
+  bool _isUpcoming() {
+    final start = DateTime.tryParse(training.startDate);
+    return start != null && DateTime.now().isBefore(start);
+  }
+
+  bool _isCompleted() {
+    final end = DateTime.tryParse(training.endDate);
+    return end != null && DateTime.now().isAfter(end);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: () => context.goNamed(
-        RouteNames.courseDetail,
-        pathParameters: {'courseId': course.id.toString()},
+    final progress = _progress();
+    final elapsed = _daysElapsed();
+    final remaining = training.totalDays - elapsed;
+    final upcoming = _isUpcoming();
+    final completed = _isCompleted();
+
+    Color progressColor;
+    if (completed) {
+      progressColor = AppColors.approved;
+    } else if (upcoming) {
+      progressColor = AppColors.info;
+    } else {
+      progressColor = _purple;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          leading: Container(
-            width: 48,
-            height: 48,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header strip ───────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(10),
+              gradient: LinearGradient(
+                colors: [_navy, _purple.withValues(alpha: 0.85)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
-            child: Icon(Icons.school, color: scheme.onPrimaryContainer),
-          ),
-          title: Text(course.title,
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: course.myProgress != null
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (course.myProgress as double) / 100,
-                      minHeight: 5,
+            child: Row(
+              children: [
+                const Icon(Icons.school_rounded,
+                    color: Colors.white70, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    training.trainingTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                )
-              : null,
-          trailing: Text(
-            '${(course.myProgress ?? 0).toStringAsFixed(0)}%',
-            style: AppTextStyles.labelSmall
-                .copyWith(color: _purple, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                StatusPill(training.status),
+              ],
+            ),
           ),
-        ),
+
+          // ── Body ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type + location row
+                Row(
+                  children: [
+                    if (training.trainingType != null &&
+                        training.trainingType!.isNotEmpty) ...[
+                      _Chip(
+                        icon: Icons.category_outlined,
+                        label: training.trainingType!,
+                        color: _purple,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (training.trainingLocation != null &&
+                        training.trainingLocation!.isNotEmpty)
+                      _Chip(
+                        icon: Icons.location_on_outlined,
+                        label: training.trainingLocation!,
+                        color: Colors.grey.shade600,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Date range
+                Row(
+                  children: [
+                    const Icon(Icons.date_range_rounded,
+                        size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${training.startDate}  →  ${training.endDate}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${training.totalDays} day${training.totalDays == 1 ? '' : 's'}',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade100,
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Progress label
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      upcoming
+                          ? 'Starts in ${DateTime.tryParse(training.startDate)!.difference(DateTime.now()).inDays + 1} day(s)'
+                          : completed
+                              ? 'Completed'
+                              : '$elapsed of ${training.totalDays} days done',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: progressColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (!upcoming && !completed)
+                      Text(
+                        '$remaining day${remaining == 1 ? '' : 's'} remaining',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  const _Chip({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -416,6 +375,13 @@ class _CertificatesTab extends StatelessWidget {
     return BlocBuilder<TrainingBloc, TrainingState>(
       builder: (context, state) {
         if (state is TrainingLoading) return const ShimmerListLoader();
+        if (state is TrainingError) {
+          return ErrorView(
+            message: state.failure.message,
+            onRetry: () =>
+                context.read<TrainingBloc>().add(const LoadCertificates()),
+          );
+        }
         if (state is CertificatesLoaded) {
           if (state.certificates.isEmpty) {
             return const EmptyState(
@@ -425,7 +391,7 @@ class _CertificatesTab extends StatelessWidget {
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: state.certificates.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
@@ -440,9 +406,10 @@ class _CertificatesTab extends StatelessWidget {
               final isExpired = expiry != null && expiry.isBefore(now);
 
               return InkWell(
-                onTap: () => context.goNamed(
+                onTap: () => context.pushNamed(
                   RouteNames.certificateView,
                   pathParameters: {'id': cert.id.toString()},
+                  extra: cert,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
@@ -451,7 +418,7 @@ class _CertificatesTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),

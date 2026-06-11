@@ -13,20 +13,35 @@ class LoadCourses extends TrainingEvent {
   @override
   List<Object?> get props => [category, search];
 }
+
 class LoadCourse extends TrainingEvent {
   final int id;
   const LoadCourse(this.id);
   @override
   List<Object?> get props => [id];
 }
+
 class EnrollCourse extends TrainingEvent {
   final int id;
   const EnrollCourse(this.id);
   @override
   List<Object?> get props => [id];
 }
-class LoadMyLearning extends TrainingEvent {}
-class LoadCertificates extends TrainingEvent {}
+
+class LoadMyLearning extends TrainingEvent {
+  const LoadMyLearning();
+}
+
+class LoadCertificates extends TrainingEvent {
+  const LoadCertificates();
+}
+
+class LoadTrainingRequests extends TrainingEvent {
+  final String? status;
+  const LoadTrainingRequests({this.status});
+  @override
+  List<Object?> get props => [status];
+}
 
 class SubmitTrainingRequest extends TrainingEvent {
   final Map<String, dynamic> params;

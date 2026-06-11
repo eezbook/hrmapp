@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/error/failures.dart';
 import '../../data/models/course_model.dart';
+import '../../data/models/training_request_model.dart';
 
 abstract class TrainingState extends Equatable {
   const TrainingState();
@@ -27,11 +28,31 @@ class CourseDetailLoaded extends TrainingState {
 }
 
 class MyLearningLoaded extends TrainingState {
-  final List<CourseModel> inProgress;
-  final List<CourseModel> completed;
-  const MyLearningLoaded(this.inProgress, this.completed);
+  final int enrolledCount;
+  final int completedCount;
+  final int inProgressCount;
+  final double totalHours;
+  final List<CourseModel> inProgressCourses;
+  final List<CourseModel> completedCourses;
+
+  const MyLearningLoaded({
+    required this.enrolledCount,
+    required this.completedCount,
+    required this.inProgressCount,
+    required this.totalHours,
+    required this.inProgressCourses,
+    required this.completedCourses,
+  });
+
   @override
-  List<Object?> get props => [inProgress, completed];
+  List<Object?> get props => [
+        enrolledCount,
+        completedCount,
+        inProgressCount,
+        totalHours,
+        inProgressCourses,
+        completedCourses,
+      ];
 }
 
 class CertificatesLoaded extends TrainingState {
@@ -39,6 +60,13 @@ class CertificatesLoaded extends TrainingState {
   const CertificatesLoaded(this.certificates);
   @override
   List<Object?> get props => [certificates];
+}
+
+class TrainingRequestsLoaded extends TrainingState {
+  final List<TrainingRequestModel> requests;
+  const TrainingRequestsLoaded(this.requests);
+  @override
+  List<Object?> get props => [requests];
 }
 
 class EnrolledSuccess extends TrainingState {}

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../../../core/api/api_response.dart';
 import '../models/course_model.dart';
+import '../models/training_request_model.dart';
 
 part 'training_remote_datasource.g.dart';
 
@@ -58,8 +59,12 @@ abstract class TrainingRemoteDataSource {
   @GET('training/my-learning')
   Future<ApiResponse<dynamic>> getMyLearning();
 
-  // TODO: backend — HrmMobileTrainingController needs a store() method
-  // at POST training/requests to accept training request submissions.
+  @GET('training/requests')
+  Future<ApiResponse<List<TrainingRequestModel>>> getTrainingRequests({
+    @Query('status') String? status,
+    @Query('page') int? page,
+  });
+
   @POST('training/requests')
   Future<ApiResponse<dynamic>> submitTrainingRequest(
     @Body() Map<String, dynamic> body,

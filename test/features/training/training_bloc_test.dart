@@ -20,6 +20,15 @@ const _course = CourseModel(
   isMandatory: false,
 );
 
+const _courseJson = {
+  'id': 1,
+  'title': 'Flutter Fundamentals',
+  'category': 'Mobile',
+  'type': 'video',
+  'durationMinutes': 120,
+  'isMandatory': false,
+};
+
 const _certificate = CertificateModel(
   id: 1,
   courseId: 1,
@@ -142,7 +151,14 @@ void main() {
       'emits [TrainingLoading, MyLearningLoaded] on success',
       build: () {
         when(() => remote.getMyLearning()).thenAnswer(
-          (_) async => _ok({'in_progress': [_course], 'completed': []}),
+          (_) async => _ok({
+            'enrolled': 1,
+            'completed': 0,
+            'inProgress': 1,
+            'totalHours': 1.0,
+            'inProgressCourses': [_courseJson],
+            'completedCourses': [],
+          }),
         );
         return bloc;
       },
@@ -150,8 +166,8 @@ void main() {
       expect: () => [
         isA<TrainingLoading>(),
         isA<MyLearningLoaded>()
-            .having((s) => s.inProgress.length, 'in_progress', 1)
-            .having((s) => s.completed.length, 'completed', 0),
+            .having((s) => s.inProgressCourses.length, 'inProgressCourses', 1)
+            .having((s) => s.completedCourses.length, 'completedCourses', 0),
       ],
     );
 
