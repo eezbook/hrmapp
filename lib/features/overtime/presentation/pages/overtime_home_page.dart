@@ -15,6 +15,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/feature_header.dart';
 import '../../../../core/widgets/shimmer_loader.dart';
 import '../../../../core/widgets/status_pill.dart';
+import '../../data/models/overtime_model.dart';
 import '../cubit/overtime_cubit.dart';
 
 const _purple = Color(0xFF7367F0);
@@ -32,6 +33,7 @@ class _OvertimeHomePageState extends State<OvertimeHomePage>
   late TabController _tabController;
   String? _filter;
   final _canApprove = HrmPermissions.canApproveOvertime;
+  OvertimeSummaryModel? _summary;
 
   @override
   void initState() {
@@ -80,9 +82,16 @@ class _OvertimeHomePageState extends State<OvertimeHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final otEnabled = _summary?.overtimeEnabled ?? true;
+    return BlocListener<OvertimeCubit, OvertimeState>(
+      listener: (context, state) {
+        if (state is OvertimeLoaded && state.summary != null) {
+          setState(() => _summary = state.summary);
+        }
+      },
+      child: Scaffold(
       backgroundColor: _pageBg,
-      floatingActionButton: HrmPermissions.canApplyOvertime
+      floatingActionButton: (HrmPermissions.canApplyOvertime && otEnabled)
           ? FloatingActionButton.extended(
               onPressed: () => context.goNamed(RouteNames.overtimeApply),
               backgroundColor: _purple,
@@ -106,6 +115,7 @@ class _OvertimeHomePageState extends State<OvertimeHomePage>
               filter: _filter,
               onFilterChanged: (f) => setState(() => _filter = f),
             ),
+      ),
     );
   }
 }
@@ -136,23 +146,76 @@ class _MyRequestsTab extends StatelessWidget {
           );
         }
         if (state is OvertimeLoaded) {
+          final s = state.summary;
           return Column(
             children: [
-              if (state.summary != null)
-                Padding(
-                  padding: const EdgeInsets.all(16),
+              if (s != null && !s.overtimeEnabled)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
                   child: Row(
                     children: [
-                      _SummaryChip(
-                        label: 'Approved hrs',
-                        value: state.summary!.totalApprovedHours
-                            .toStringAsFixed(1),
+                      Icon(Icons.info_outline_rounded,
+                          color: Colors.orange.shade700, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Overtime is disabled for your account.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.orange.shade800),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      _SummaryChip(
-                        label: 'Total amount',
-                        value: CurrencyUtils.formatShort(
-                            state.summary!.totalAmount),
+                    ],
+                  ),
+                ),
+              if (s != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _SummaryChip(
+                            label: 'Approved hrs',
+                            value: s.totalApprovedHours.toStringAsFixed(1),
+                          ),
+                          const SizedBox(width: 10),
+                          _SummaryChip(
+                            label: 'Used today',
+                            value:
+                                '${s.usedHoursToday.toStringAsFixed(1)} / ${s.dailyThresholdHours}h',
+                            isWarning: s.usedHoursToday >=
+                                s.dailyThresholdHours,
+                          ),
+                          const SizedBox(width: 10),
+                          _SummaryChip(
+                            label: 'Total amount',
+                            value: CurrencyUtils.formatShort(s.totalAmount),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.payments_outlined,
+                              size: 14, color: Color(0xFF7367F0)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${s.normalRate}× normal · ${s.holidayRate}× holiday',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: const Color(0xFF7367F0),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -382,28 +445,34 @@ class _ApprovalsTab extends StatelessWidget {
 class _SummaryChip extends StatelessWidget {
   final String label;
   final String value;
-  const _SummaryChip({required this.label, required this.value});
+  final bool isWarning;
+  const _SummaryChip({
+    required this.label,
+    required this.value,
+    this.isWarning = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final bg = isWarning ? scheme.errorContainer : scheme.primaryContainer;
+    final fg = isWarning ? scheme.onErrorContainer : scheme.onPrimaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.primaryContainer,
+        color: bg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
           Text(
             value,
-            style: AppTextStyles.titleSmall
-                .copyWith(color: scheme.onPrimaryContainer),
+            style: AppTextStyles.titleSmall.copyWith(color: fg),
           ),
           Text(
             label,
             style: AppTextStyles.bodySmall.copyWith(
-              color: scheme.onPrimaryContainer.withOpacity(0.7),
+              color: fg.withOpacity(0.7),
             ),
           ),
         ],

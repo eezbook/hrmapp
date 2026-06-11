@@ -31,6 +31,11 @@ abstract class OvertimeSummaryModel with _$OvertimeSummaryModel {
     @Default(0.0) double totalApprovedHours,
     @Default(0.0) double totalAmount,
     @Default(0) int pendingCount,
+    @Default(true) bool overtimeEnabled,
+    @Default(1.5) double normalRate,
+    @Default(2.0) double holidayRate,
+    @Default(4) int dailyThresholdHours,
+    @Default(0.0) double usedHoursToday,
   }) = _OvertimeSummaryModel;
 
   factory OvertimeSummaryModel.fromJson(Map<String, dynamic> json) =>

@@ -38,8 +38,11 @@ import '../../features/training/presentation/bloc/course_player_cubit.dart';
 import '../../features/training/presentation/bloc/training_bloc.dart';
 import '../../features/training/presentation/pages/add_training_request_page.dart';
 import '../../features/training/presentation/pages/assessment_page.dart';
+import '../../features/training/presentation/pages/certificate_view_page.dart';
+import '../../features/training/presentation/pages/course_detail_page.dart';
 import '../../features/training/presentation/pages/course_player_page.dart';
 import '../../features/training/presentation/pages/training_home_page.dart';
+import '../../features/training/data/models/course_model.dart';
 import '../../features/travel/presentation/bloc/travel_bloc.dart';
 import '../../features/travel/presentation/pages/expense_claim_detail_page.dart';
 import '../../features/travel/presentation/pages/expense_claim_page.dart';
@@ -278,10 +281,14 @@ class AppRouter {
                   path: ':courseId',
                   name: RouteNames.courseDetail,
                   parentNavigatorKey: _rootNavKey,
-                  builder: (context, state) => BlocProvider(
-                    create: (_) => getIt<TrainingBloc>(),
-                    child: const SizedBox.shrink(),
-                  ),
+                  builder: (context, state) {
+                    final courseId =
+                        int.parse(state.pathParameters['courseId']!);
+                    return BlocProvider(
+                      create: (_) => getIt<TrainingBloc>(),
+                      child: CourseDetailPage(courseId: courseId),
+                    );
+                  },
                   routes: [
                     GoRoute(
                       path: 'player',
@@ -313,23 +320,14 @@ class AppRouter {
                     ),
                   ],
                 ),
-                // tab variant — stays in shell
                 GoRoute(
-                  path: 'certificates',
-                  name: RouteNames.certificates,
-                  builder: (context, state) => BlocProvider(
-                    create: (_) => getIt<TrainingBloc>(),
-                    child: const TrainingHomePage(),
-                  ),
-                  routes: [
-                    GoRoute(
-                      path: ':id',
-                      name: RouteNames.certificateView,
-                      parentNavigatorKey: _rootNavKey,
-                      builder: (context, state) =>
-                          const SizedBox.shrink(),
-                    ),
-                  ],
+                  path: 'certificates/:id',
+                  name: RouteNames.certificateView,
+                  parentNavigatorKey: _rootNavKey,
+                  builder: (context, state) {
+                    final cert = state.extra as CertificateModel;
+                    return CertificateViewPage(cert: cert);
+                  },
                 ),
               ],
             ),

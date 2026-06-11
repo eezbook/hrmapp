@@ -4,6 +4,7 @@ import '../../../../core/api/api_response.dart';
 import '../models/attendance_record_model.dart';
 import '../models/attendance_summary_model.dart';
 import '../models/attendance_locations_model.dart';
+import '../models/shift_config_model.dart';
 
 part 'attendance_remote_datasource.g.dart';
 
@@ -38,4 +39,7 @@ abstract class AttendanceRemoteDataSource {
 
   @GET('attendance/location')
   Future<ApiResponse<AttendanceLocationsModel>> getAttendanceLocations();
+
+  @GET('attendance/shift-config')
+  Future<ApiResponse<ShiftConfigModel>> getShiftConfig();
 }

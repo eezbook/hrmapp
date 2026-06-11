@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/date_utils.dart';
-import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../data/models/overtime_model.dart';
 import '../cubit/overtime_cubit.dart';
 
 class OvertimeApplyPage extends StatefulWidget {
@@ -20,8 +20,23 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String? _error;
+  OvertimeSummaryModel? _summary;
 
-  static const _maxHoursPerDay = 4.0;
+  static const _fallbackMaxHoursPerDay = 4.0;
+
+  double get _effectiveMaxHours =>
+      _summary?.dailyThresholdHours.toDouble() ?? _fallbackMaxHoursPerDay;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_summary == null) {
+      final cubitState = context.read<OvertimeCubit>().state;
+      if (cubitState is OvertimeLoaded) {
+        _summary = cubitState.summary;
+      }
+    }
+  }
 
   double get _calculatedHours {
     if (_startTime == null || _endTime == null) return 0;
@@ -32,7 +47,7 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
     return (end - start) / 60.0;
   }
 
-  bool get _exceedsMax => _calculatedHours > _maxHoursPerDay;
+  bool get _exceedsMax => _calculatedHours > _effectiveMaxHours;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -64,6 +79,10 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
   }
 
   void _submit() {
+    if (_summary != null && !_summary!.overtimeEnabled) {
+      setState(() => _error = 'Overtime is disabled for your account.');
+      return;
+    }
     if (_date == null) {
       setState(() => _error = 'Select date');
       return;
@@ -75,6 +94,15 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
     if (_calculatedHours <= 0) {
       setState(() => _error = 'End time must be after start time');
       return;
+    }
+    if (_summary != null) {
+      final remaining =
+          _summary!.dailyThresholdHours - _summary!.usedHoursToday;
+      if (_calculatedHours > remaining) {
+        setState(() => _error =
+            'This request (${_calculatedHours.toStringAsFixed(1)} hrs) exceeds your remaining daily quota (${remaining.toStringAsFixed(1)} hrs).');
+        return;
+      }
     }
     if (_reasonCtrl.text.trim().length < 10) {
       setState(() => _error = 'Reason must be at least 10 characters');
@@ -130,6 +158,10 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_summary != null) ...[
+                _OvertimeInfoCard(summary: _summary!),
+                const SizedBox(height: AppSpacing.md),
+              ],
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
@@ -203,7 +235,7 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
                       const SizedBox(width: 8),
                       Text(
                         '${_calculatedHours.toStringAsFixed(1)} hours'
-                        '${_exceedsMax ? ' — exceeds policy max of ${_maxHoursPerDay.toStringAsFixed(0)} hrs/day' : ''}',
+                        '${_exceedsMax ? ' — exceeds policy max of ${_effectiveMaxHours.toStringAsFixed(0)} hrs/day' : ''}',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: _exceedsMax
                               ? scheme.onErrorContainer
@@ -242,6 +274,73 @@ class _OvertimeApplyPageState extends State<OvertimeApplyPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OvertimeInfoCard extends StatelessWidget {
+  final OvertimeSummaryModel summary;
+  const _OvertimeInfoCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final remaining =
+        summary.dailyThresholdHours - summary.usedHoursToday;
+    final atLimit = remaining <= 0;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: atLimit
+            ? scheme.errorContainer
+            : scheme.secondaryContainer.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: atLimit
+              ? scheme.error.withOpacity(0.4)
+              : scheme.secondary.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                atLimit
+                    ? Icons.block_rounded
+                    : Icons.info_outline_rounded,
+                size: 16,
+                color: atLimit
+                    ? scheme.onErrorContainer
+                    : scheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Today: ${summary.usedHoursToday.toStringAsFixed(1)} / ${summary.dailyThresholdHours} hrs used',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: atLimit
+                      ? scheme.onErrorContainer
+                      : scheme.onSecondaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            atLimit
+                ? 'You have reached your monthly overtime limit.'
+                : 'Remaining today: ${remaining.toStringAsFixed(1)} hrs  ·  Rates: ${summary.normalRate}× normal, ${summary.holidayRate}× holiday',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: atLimit
+                  ? scheme.onErrorContainer.withOpacity(0.8)
+                  : scheme.onSecondaryContainer.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }

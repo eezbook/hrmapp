@@ -8,6 +8,7 @@ import '../../../../core/sync/sync_queue_service.dart';
 import '../../data/datasources/attendance_remote_datasource.dart';
 import '../../data/models/attendance_record_model.dart';
 import '../../data/models/attendance_summary_model.dart';
+import '../../data/models/shift_config_model.dart';
 import '../../../travel/data/repositories/travel_repository_impl.dart';
 import '../../../leave/domain/repositories/leave_repository.dart';
 
@@ -35,6 +36,7 @@ class AttendanceLoaded extends AttendanceState {
   final int year;
   final PunchStatus punchStatus;
   final String? punchError;
+  final ShiftConfigModel? shiftConfig;
 
   const AttendanceLoaded({
     required this.summary,
@@ -44,6 +46,7 @@ class AttendanceLoaded extends AttendanceState {
     required this.year,
     this.punchStatus = PunchStatus.idle,
     this.punchError,
+    this.shiftConfig,
   });
 
   AttendanceLoaded copyWith({
@@ -54,6 +57,7 @@ class AttendanceLoaded extends AttendanceState {
     int? year,
     PunchStatus? punchStatus,
     String? punchError,
+    ShiftConfigModel? shiftConfig,
   }) {
     return AttendanceLoaded(
       summary: summary ?? this.summary,
@@ -63,6 +67,7 @@ class AttendanceLoaded extends AttendanceState {
       year: year ?? this.year,
       punchStatus: punchStatus ?? this.punchStatus,
       punchError: punchError ?? this.punchError,
+      shiftConfig: shiftConfig ?? this.shiftConfig,
     );
   }
 
@@ -75,6 +80,7 @@ class AttendanceLoaded extends AttendanceState {
         year,
         punchStatus,
         punchError,
+        shiftConfig,
       ];
 }
 
@@ -122,12 +128,19 @@ class AttendanceCubit extends Cubit<AttendanceState> {
         today = todayResp.data;
       } catch (_) {}
 
+      ShiftConfigModel? shiftConfig;
+      try {
+        final shiftResp = await _remote.getShiftConfig();
+        shiftConfig = shiftResp.data;
+      } catch (_) {}
+
       emit(AttendanceLoaded(
         summary: results[0].data as AttendanceSummaryModel,
         records: results[1].data as List<AttendanceRecordModel>,
         todayRecord: today,
         month: _month,
         year: _year,
+        shiftConfig: shiftConfig,
       ));
     } catch (e) {
       emit(AttendanceError(ErrorHandler.handle(e).message));

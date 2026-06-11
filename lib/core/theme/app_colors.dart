@@ -22,7 +22,7 @@ abstract class AppColors {
   static const info = Color(0xFF2563EB);
 
   // Accent — golden yellow used for primary CTAs (login button, highlights)
-  static const accent = Color(0xFFF5A623);
+  static const accent = Color(0xFF0D9B70);
   static const accentBg = Color(0xFFFFF3DC);
 
   // Sky — used for profile/directory module tile

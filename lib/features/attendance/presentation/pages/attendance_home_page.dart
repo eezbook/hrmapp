@@ -5,6 +5,7 @@ import '../../../../core/cubit/hrm_header_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/attendance_record_model.dart';
+import '../../data/models/shift_config_model.dart';
 import '../cubit/attendance_cubit.dart';
 
 const _navy   = Color(0xFF1B2064);
@@ -118,9 +119,18 @@ class _AttendanceHomePageState extends State<AttendanceHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (state.shiftConfig != null &&
+                        state.shiftConfig!.effectiveShiftStart != null) ...[
+                      _ShiftInfoCard(
+                        config: state.shiftConfig!,
+                        alreadyCheckedIn: state.todayRecord?.checkIn != null,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     _TodayPunchCard(
                       todayRecord: state.todayRecord,
                       punchStatus: state.punchStatus,
+                      punchError: state.punchError,
                       onCheckIn: () =>
                           context.read<AttendanceCubit>().checkIn(),
                       onCheckOut: () =>
@@ -156,12 +166,14 @@ class _AttendanceHomePageState extends State<AttendanceHomePage> {
 class _TodayPunchCard extends StatelessWidget {
   final AttendanceRecordModel? todayRecord;
   final PunchStatus punchStatus;
+  final String? punchError;
   final VoidCallback onCheckIn;
   final VoidCallback onCheckOut;
 
   const _TodayPunchCard({
     required this.todayRecord,
     required this.punchStatus,
+    this.punchError,
     required this.onCheckIn,
     required this.onCheckOut,
   });
@@ -242,6 +254,35 @@ class _TodayPunchCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          if (punchStatus == PunchStatus.error && punchError != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade900.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_off_rounded,
+                      color: Colors.white70, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      punchError!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           if (!checkedOut)
             SizedBox(
               width: double.infinity,
@@ -837,6 +878,137 @@ class _ActionTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Shift Info Card ───────────────────────────────────────────────────────────
+
+class _ShiftInfoCard extends StatelessWidget {
+  final ShiftConfigModel config;
+  final bool alreadyCheckedIn;
+
+  const _ShiftInfoCard({required this.config, required this.alreadyCheckedIn});
+
+  static int _timeToMinutes(String t) {
+    final p = t.split(':');
+    if (p.length < 2) return 0;
+    return (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p[1]) ?? 0);
+  }
+
+  static String _addMinutes(String t, int mins) {
+    final total = _timeToMinutes(t) + mins;
+    final h = (total ~/ 60) % 24;
+    final m = total % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final start = config.effectiveShiftStart!;
+    final end   = config.effectiveShiftEnd ?? '--:--';
+    final isEvening = config.effectiveShiftName == 'evening';
+    final shiftLabel = isEvening ? 'Evening Shift' : 'Morning Shift';
+    final deadline = _addMinutes(start, config.lateRelaxationMinutes);
+
+    final now        = TimeOfDay.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+    final deadlineMins = _timeToMinutes(deadline);
+    final endMins    = config.effectiveShiftEnd != null
+        ? _timeToMinutes(config.effectiveShiftEnd!)
+        : 24 * 60;
+
+    String chipLabel;
+    Color chipColor;
+    if (alreadyCheckedIn) {
+      chipLabel = 'Checked In';
+      chipColor = _clrPresent;
+    } else if (nowMinutes <= deadlineMins) {
+      chipLabel = 'On Time';
+      chipColor = _clrPresent;
+    } else if (nowMinutes <= endMins) {
+      chipLabel = 'Late';
+      chipColor = _clrVisit;
+    } else {
+      chipLabel = 'Absent Risk';
+      chipColor = _clrAbsent;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _navy.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isEvening ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+              color: _navy,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      shiftLabel,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: _navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: chipColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        chipLabel,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: chipColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$start → $end  ·  Check in by $deadline',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
