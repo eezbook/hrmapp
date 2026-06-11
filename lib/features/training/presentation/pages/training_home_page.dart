@@ -93,8 +93,60 @@ class _TrainingHomePageState extends State<TrainingHomePage>
 
 // ── My Trainings Tab ──────────────────────────────────────────────────────────
 
-class _MyTrainingsTab extends StatelessWidget {
+enum _TrainingFilter { all, pending, approved, inProgress }
+
+class _MyTrainingsTab extends StatefulWidget {
   const _MyTrainingsTab();
+
+  @override
+  State<_MyTrainingsTab> createState() => _MyTrainingsTabState();
+}
+
+class _MyTrainingsTabState extends State<_MyTrainingsTab> {
+  _TrainingFilter _filter = _TrainingFilter.all;
+
+  static const _labels = {
+    _TrainingFilter.all: 'All',
+    _TrainingFilter.inProgress: 'In Progress',
+    _TrainingFilter.pending: 'Pending',
+    _TrainingFilter.approved: 'Approved',
+  };
+
+  bool _matchesFilter(TrainingRequestModel t) {
+    switch (_filter) {
+      case _TrainingFilter.all:
+        return true;
+      case _TrainingFilter.pending:
+        return t.status == 'pending' || t.status == 'draft';
+      case _TrainingFilter.approved:
+        return t.status == 'approved';
+      case _TrainingFilter.inProgress:
+        final start = DateTime.tryParse(t.startDate);
+        final end = DateTime.tryParse(t.endDate);
+        if (start == null || end == null) return false;
+        final now = DateTime.now();
+        return !now.isBefore(start) && !now.isAfter(end);
+    }
+  }
+
+  int _count(List<TrainingRequestModel> all, _TrainingFilter f) {
+    return all.where((t) {
+      switch (f) {
+        case _TrainingFilter.all:
+          return true;
+        case _TrainingFilter.pending:
+          return t.status == 'pending' || t.status == 'draft';
+        case _TrainingFilter.approved:
+          return t.status == 'approved';
+        case _TrainingFilter.inProgress:
+          final start = DateTime.tryParse(t.startDate);
+          final end = DateTime.tryParse(t.endDate);
+          if (start == null || end == null) return false;
+          final now = DateTime.now();
+          return !now.isBefore(start) && !now.isAfter(end);
+      }
+    }).length;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,18 +162,102 @@ class _MyTrainingsTab extends StatelessWidget {
           );
         }
         if (state is TrainingRequestsLoaded) {
-          if (state.requests.isEmpty) {
-            return const EmptyState(
-              icon: Icons.school_rounded,
-              title: 'No trainings assigned',
-              subtitle: 'Your approved training programmes will appear here.',
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: state.requests.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _TrainingCard(training: state.requests[i]),
+          final all = state.requests;
+          final filtered = all.where(_matchesFilter).toList();
+
+          return Column(
+            children: [
+              // ── Filter chips ─────────────────────────────────
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _TrainingFilter.values.map((f) {
+                      final active = _filter == f;
+                      final count = _count(all, f);
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _filter = f),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: active ? _navy : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: active ? _navy : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _labels[f]!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: active
+                                        ? Colors.white
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: active
+                                        ? Colors.white.withValues(alpha: 0.25)
+                                        : Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: active
+                                          ? Colors.white
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+
+              // ── List ─────────────────────────────────────────
+              Expanded(
+                child: filtered.isEmpty
+                    ? EmptyState(
+                        icon: Icons.school_rounded,
+                        title: _filter == _TrainingFilter.all
+                            ? 'No trainings assigned'
+                            : 'No ${_labels[_filter]!.toLowerCase()} trainings',
+                        subtitle: _filter == _TrainingFilter.all
+                            ? 'Your training programmes will appear here.'
+                            : 'Switch filter to see other trainings.',
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (_, i) =>
+                            _TrainingCard(training: filtered[i]),
+                      ),
+              ),
+            ],
           );
         }
         return const SizedBox.shrink();
@@ -194,37 +330,35 @@ class _TrainingCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header strip ───────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_navy, _purple.withValues(alpha: 0.85)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Title row ──────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.school_rounded,
-                    color: Colors.white70, size: 18),
-                const SizedBox(width: 8),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _purple.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.school_rounded,
+                      color: _purple, size: 18),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     training.trainingTitle,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF1B2064),
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -232,16 +366,11 @@ class _TrainingCard extends StatelessWidget {
                 StatusPill(training.status),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
 
-          // ── Body ───────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Type + location row
-                Row(
+            // ── Body ─────────────────────────────────────────
+            // Type + location row
+            Row(
                   children: [
                     if (training.trainingType != null &&
                         training.trainingType!.isNotEmpty) ...[
@@ -326,8 +455,6 @@ class _TrainingCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
     );
   }
 }
