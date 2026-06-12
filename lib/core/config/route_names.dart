@@ -45,4 +45,7 @@ abstract class RouteNames {
 
   // Profile
   static const profile = 'profile';
+
+  // Location update
+  static const location = 'location';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/config/route_names.dart';
 import '../../../../core/cubit/hrm_header_cubit.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/storage/hive_storage.dart';
@@ -92,6 +94,18 @@ class _ProfilePageState extends State<ProfilePage> {
               iconColor: const Color(0xFF0EA5E9),
               title: 'Employee Code',
               subtitle: empCode.isNotEmpty ? '#$empCode' : '—',
+            ),
+          ]),
+          const SizedBox(height: 20),
+          _SectionLabel('Work'),
+          const SizedBox(height: 8),
+          _MenuCard(children: [
+            _MenuItem(
+              icon: Icons.location_on_outlined,
+              iconColor: const Color(0xFF28C76F),
+              title: 'My Location',
+              subtitle: 'Update your home / WFH check-in location',
+              onTap: () => context.go('/location'),
             ),
           ]),
           const SizedBox(height: 20),

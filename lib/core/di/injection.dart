@@ -39,6 +39,8 @@ import '../../features/training/presentation/bloc/training_bloc.dart';
 import '../../features/travel/data/datasources/travel_remote_datasource.dart';
 import '../../features/travel/data/repositories/travel_repository_impl.dart';
 import '../../features/travel/presentation/bloc/travel_bloc.dart';
+import '../../features/location/data/datasources/location_remote_datasource.dart';
+import '../../features/location/presentation/cubit/location_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -111,6 +113,9 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<NotificationsRemoteDataSource>(
     () => NotificationsRemoteDataSource(getIt<DioClient>().dio),
   );
+  getIt.registerLazySingleton<LocationRemoteDataSource>(
+    () => LocationRemoteDataSource(getIt<DioClient>().dio),
+  );
 
   // Repositories
   getIt.registerLazySingleton<AuthRepository>(
@@ -178,6 +183,12 @@ Future<void> configureDependencies() async {
   );
   getIt.registerFactory<OvertimeCubit>(
     () => OvertimeCubit(getIt<OvertimeRemoteDataSource>()),
+  );
+  getIt.registerFactory<LocationCubit>(
+    () => LocationCubit(
+      getIt<LocationRemoteDataSource>(),
+      getIt<LocationService>(),
+    ),
   );
 
   // Router (singleton because it holds navigation state)
