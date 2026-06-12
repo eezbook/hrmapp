@@ -16,14 +16,12 @@ class LocationRemoteDataSource {
   Future<void> updateLocation({
     required double latitude,
     required double longitude,
-    required int radius,
   }) async {
     final response = await _dio.post(
       'attendance/location/update',
       data: {
         'latitude': latitude,
         'longitude': longitude,
-        'radius': radius,
       },
     );
     final body = response.data as Map<String, dynamic>;

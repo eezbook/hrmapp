@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/config/route_names.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -31,9 +33,8 @@ class _LocationView extends StatefulWidget {
 }
 
 class _LocationViewState extends State<_LocationView> {
-  final _latCtrl    = TextEditingController();
-  final _lngCtrl    = TextEditingController();
-  final _radiusCtrl = TextEditingController(text: '100');
+  final _latCtrl = TextEditingController();
+  final _lngCtrl = TextEditingController();
 
   bool _useManual = false;
 
@@ -41,17 +42,11 @@ class _LocationViewState extends State<_LocationView> {
   void dispose() {
     _latCtrl.dispose();
     _lngCtrl.dispose();
-    _radiusCtrl.dispose();
     super.dispose();
   }
 
-  int get _radius {
-    final v = int.tryParse(_radiusCtrl.text.trim()) ?? 100;
-    return v.clamp(10, 50000);
-  }
-
   void _onDetect() {
-    context.read<LocationCubit>().detectAndSubmit(radius: _radius);
+    context.read<LocationCubit>().detectAndSubmit();
   }
 
   void _onManualSubmit() {
@@ -70,7 +65,6 @@ class _LocationViewState extends State<_LocationView> {
     context.read<LocationCubit>().submitManual(
       latitude: lat,
       longitude: lng,
-      radius: _radius,
     );
   }
 
@@ -83,18 +77,30 @@ class _LocationViewState extends State<_LocationView> {
     );
   }
 
+  void _goBack(BuildContext context) => context.goNamed(RouteNames.dashboard);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _pageBg,
-      appBar: AppBar(
-        backgroundColor: _navy,
-        foregroundColor: Colors.white,
-        title: const Text('My Location', style: TextStyle(color: Colors.white)),
-        centerTitle: false,
-        elevation: 0,
-      ),
-      body: BlocConsumer<LocationCubit, LocationState>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (_, __) => _goBack(context),
+      child: Scaffold(
+        backgroundColor: _pageBg,
+        appBar: AppBar(
+          backgroundColor: _navy,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => _goBack(context),
+          ),
+          title: const Text(
+            'My Location',
+            style: TextStyle(color: Colors.white),
+          ),
+          centerTitle: false,
+          elevation: 0,
+        ),
+        body: BlocConsumer<LocationCubit, LocationState>(
         listener: (ctx, state) {
           if (state is LocationError) {
             ScaffoldMessenger.of(ctx).showSnackBar(
@@ -116,7 +122,6 @@ class _LocationViewState extends State<_LocationView> {
             return _SuccessView(
               latitude: state.latitude,
               longitude: state.longitude,
-              radius: state.radius,
             );
           }
 
@@ -130,17 +135,11 @@ class _LocationViewState extends State<_LocationView> {
               );
             }
 
-            // fill radius from saved value
-            if (_radiusCtrl.text == '100' && state.currentRadius != 100) {
-              _radiusCtrl.text = state.currentRadius.toString();
-            }
-
             return _UpdateFormView(
               state: state,
               useManual: _useManual,
               latCtrl: _latCtrl,
               lngCtrl: _lngCtrl,
-              radiusCtrl: _radiusCtrl,
               onToggleManual: () => setState(() => _useManual = !_useManual),
               onDetect: _onDetect,
               onManualSubmit: _onManualSubmit,
@@ -166,6 +165,7 @@ class _LocationViewState extends State<_LocationView> {
           return const SizedBox.shrink();
         },
       ),
+    ),
     );
   }
 }
@@ -245,7 +245,6 @@ class _UpdateFormView extends StatelessWidget {
   final bool useManual;
   final TextEditingController latCtrl;
   final TextEditingController lngCtrl;
-  final TextEditingController radiusCtrl;
   final VoidCallback onToggleManual;
   final VoidCallback onDetect;
   final VoidCallback onManualSubmit;
@@ -255,7 +254,6 @@ class _UpdateFormView extends StatelessWidget {
     required this.useManual,
     required this.latCtrl,
     required this.lngCtrl,
-    required this.radiusCtrl,
     required this.onToggleManual,
     required this.onDetect,
     required this.onManualSubmit,
@@ -290,8 +288,7 @@ class _UpdateFormView extends StatelessWidget {
               subtitle:
                   '${state.currentLocationName}\n'
                   '${state.currentLatitude!.toStringAsFixed(6)}, '
-                  '${state.currentLongitude!.toStringAsFixed(6)} '
-                  '(radius ${state.currentRadius} m)',
+                  '${state.currentLongitude!.toStringAsFixed(6)}',
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -351,8 +348,6 @@ class _UpdateFormView extends StatelessWidget {
                       color: Colors.grey.shade600,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  _RadiusField(controller: radiusCtrl),
                   const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
@@ -442,8 +437,6 @@ class _UpdateFormView extends StatelessWidget {
                       prefixIcon: Icon(Icons.east),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _RadiusField(controller: radiusCtrl),
                   const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
@@ -481,12 +474,10 @@ class _UpdateFormView extends StatelessWidget {
 class _SuccessView extends StatelessWidget {
   final double latitude;
   final double longitude;
-  final int radius;
 
   const _SuccessView({
     required this.latitude,
     required this.longitude,
-    required this.radius,
   });
 
   @override
@@ -530,8 +521,7 @@ class _SuccessView extends StatelessWidget {
             iconColor: _green,
             title: 'Saved Location',
             subtitle:
-                '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
-                '\nAllowed radius: $radius m',
+                '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
           ),
         ],
       ),
@@ -656,22 +646,3 @@ class _ModeChip extends StatelessWidget {
   }
 }
 
-class _RadiusField extends StatelessWidget {
-  final TextEditingController controller;
-  const _RadiusField({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: const InputDecoration(
-        labelText: 'Allowed Check-in Radius (metres)',
-        hintText: '100',
-        prefixIcon: Icon(Icons.radar_rounded),
-        suffixText: 'm',
-      ),
-    );
-  }
-}

@@ -97,18 +97,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ]),
           const SizedBox(height: 20),
-          _SectionLabel('Work'),
-          const SizedBox(height: 8),
-          _MenuCard(children: [
-            _MenuItem(
-              icon: Icons.location_on_outlined,
-              iconColor: const Color(0xFF28C76F),
-              title: 'My Location',
-              subtitle: 'Update your home / WFH check-in location',
-              onTap: () => context.go('/location'),
-            ),
-          ]),
-          const SizedBox(height: 20),
           _SectionLabel('Security'),
           const SizedBox(height: 8),
           _MenuCard(children: [
