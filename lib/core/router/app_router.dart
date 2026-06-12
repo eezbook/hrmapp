@@ -49,6 +49,7 @@ import '../../features/travel/presentation/pages/expense_claim_page.dart';
 import '../../features/travel/presentation/pages/travel_home_page.dart';
 import '../../features/travel/presentation/pages/travel_request_detail_page.dart';
 import '../../features/travel/presentation/pages/travel_request_page.dart';
+import '../../features/location/presentation/pages/location_page.dart';
 
 // Root navigator key — detail pages use this so they push above the shell
 // (full-screen with their own AppBar), hiding the shell header underneath.
@@ -388,6 +389,13 @@ class AppRouter {
               path: '/profile',
               name: RouteNames.profile,
               builder: (_, __) => const ProfilePage(),
+            ),
+
+            // ── Location update ───────────────────────────────────────────
+            GoRoute(
+              path: '/location',
+              name: RouteNames.location,
+              builder: (_, __) => const LocationPage(),
             ),
           ],
         ),
