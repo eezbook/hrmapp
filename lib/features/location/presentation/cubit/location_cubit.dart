@@ -20,14 +20,12 @@ class LocationLoaded extends LocationState {
   final bool allowUpdate;
   final double? currentLatitude;
   final double? currentLongitude;
-  final int currentRadius;
   final String currentLocationName;
 
   const LocationLoaded({
     required this.allowUpdate,
     this.currentLatitude,
     this.currentLongitude,
-    this.currentRadius = 100,
     this.currentLocationName = 'Home',
   });
 
@@ -36,7 +34,6 @@ class LocationLoaded extends LocationState {
     allowUpdate,
     currentLatitude,
     currentLongitude,
-    currentRadius,
     currentLocationName,
   ];
 }
@@ -52,16 +49,14 @@ class LocationSubmitting extends LocationState {
 class LocationSubmitted extends LocationState {
   final double latitude;
   final double longitude;
-  final int radius;
 
   const LocationSubmitted({
     required this.latitude,
     required this.longitude,
-    required this.radius,
   });
 
   @override
-  List<Object?> get props => [latitude, longitude, radius];
+  List<Object?> get props => [latitude, longitude];
 }
 
 class LocationError extends LocationState {
@@ -96,9 +91,6 @@ class LocationCubit extends Cubit<LocationState> {
         currentLongitude: home != null
             ? (home['longitude'] as num?)?.toDouble()
             : null,
-        currentRadius: home != null
-            ? ((home['radius'] as num?)?.toInt() ?? 100)
-            : 100,
         currentLocationName:
             (home?['location_name'] as String?)?.isNotEmpty == true
                 ? home!['location_name'] as String
@@ -110,7 +102,7 @@ class LocationCubit extends Cubit<LocationState> {
   }
 
   // detect GPS and submit in one step
-  Future<void> detectAndSubmit({required int radius}) async {
+  Future<void> detectAndSubmit() async {
     final current = state;
     if (current is! LocationLoaded || !current.allowUpdate) return;
 
@@ -121,12 +113,10 @@ class LocationCubit extends Cubit<LocationState> {
       await _remote.updateLocation(
         latitude: position.latitude,
         longitude: position.longitude,
-        radius: radius,
       );
       emit(LocationSubmitted(
         latitude: position.latitude,
         longitude: position.longitude,
-        radius: radius,
       ));
     } catch (e) {
       final msg = e is LocationServiceException
@@ -142,7 +132,6 @@ class LocationCubit extends Cubit<LocationState> {
   Future<void> submitManual({
     required double latitude,
     required double longitude,
-    required int radius,
   }) async {
     final current = state;
     if (current is! LocationLoaded || !current.allowUpdate) return;
@@ -152,12 +141,10 @@ class LocationCubit extends Cubit<LocationState> {
       await _remote.updateLocation(
         latitude: latitude,
         longitude: longitude,
-        radius: radius,
       );
       emit(LocationSubmitted(
         latitude: latitude,
         longitude: longitude,
-        radius: radius,
       ));
     } catch (e) {
       final msg = e is LocationUpdateException

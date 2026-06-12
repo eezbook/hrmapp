@@ -435,10 +435,10 @@ class _ModulesGrid extends StatelessWidget {
         hasAccess: true,
       ),
       _ModuleItem(
-        icon: Icons.inventory_2_outlined,
-        label: 'Assets',
-        route: RouteNames.leave,
-        hasAccess: HrmPermissions.canApplyLeave,
+        icon: Icons.location_on_outlined,
+        label: 'My Location',
+        route: RouteNames.location,
+        hasAccess: true,
       ),
     ];
 
